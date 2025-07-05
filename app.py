@@ -1,5 +1,5 @@
 import streamlit as st
-from db import create_table, insert_character, get_all_characters, delete_character
+from db import create_table, insert_character, get_all_characters, delete_character, create_connection
 from stats import species_base_stats, rand_stat
 
 st.set_page_config(page_title="Game Chiến Đấu", layout="wide")
@@ -18,7 +18,7 @@ tab_objects = st.tabs(tabs)
 tab1, tab2, tab3 = tab_objects[:3]
 tab4 = tab_objects[3] if len(tab_objects) > 3 else None
 
-# Tab 1: Hướng dẫn
+# ===== TAB 1: Hướng dẫn =====
 with tab1:
     st.markdown("""
     ## 📖 Hướng Dẫn
@@ -26,7 +26,7 @@ with tab1:
     - Chọn nhân vật ở tab 3 để mở tab Chiến đấu
     """)
 
-# Tab 2: Quản lý
+# ===== TAB 2: Quản lý nhân vật =====
 with tab2:
     st.subheader("🧬 Tạo nhân vật mới")
 
@@ -59,31 +59,30 @@ with tab2:
     if species_filter != "Tất cả":
         df = df[df["species"] == species_filter]
 
-    # 🧪 Hiển thị biểu tượng & màu theo species
+    # Biểu tượng & màu theo loài
     def get_species_icon(species):
-        icons = {
+        return {
             "Witch": "🧙‍♀️",
             "Vampire": "🧛",
             "Werewolf": "🐺"
-        }
-        return icons.get(species, "❓")
+        }.get(species, "❓")
 
-    def style_row(row):
-        colors = {
-            "Witch": "#fef9e7",
-            "Vampire": "#fdecea",
-            "Werewolf": "#eafaf1"
-        }
-        return [f"background-color: {colors.get(row['species'], '#fff')}" for _ in row]
+    def style_row_by_species(species):
+        return f"background-color: { {
+            'Witch': '#fef9e7',
+            'Vampire': '#fdecea',
+            'Werewolf': '#eafaf1'
+        }.get(species, '#fff') }"
 
     if not df.empty:
         df["🧬 Species"] = df["species"].apply(lambda s: f"{get_species_icon(s)} {s}")
         df_view = df[["id", "name", "🧬 Species", "role", "strength", "stamina", "vitality", "dexterity", "agility"]]
 
-        st.dataframe(
-            df_view.style.apply(style_row, axis=1),
-            use_container_width=True
+        styled_df = df_view.style.apply(
+            lambda row: [style_row_by_species(df.loc[row.name]["species"])] * len(row),
+            axis=1
         )
+        st.dataframe(styled_df, use_container_width=True)
     else:
         st.info("⚠️ Không có nhân vật nào phù hợp.")
 
@@ -98,7 +97,7 @@ with tab2:
     else:
         st.info("⛔ Không có nhân vật nào để xoá!")
 
-# Tab 3: Bắt đầu
+# ===== TAB 3: Bắt đầu =====
 with tab3:
     st.subheader("🚀 Chọn nhân vật để bắt đầu")
     df = get_all_characters()
@@ -110,7 +109,7 @@ with tab3:
             st.session_state.selected_character = info
             st.success(f"🎉 Đã chọn {selected_name}! Tab Chiến Đấu mở!")
 
-# Tab 4: Chiến đấu
+# ===== TAB 4: Chiến đấu =====
 if tab4:
     with tab4:
         char = st.session_state.selected_character
@@ -124,22 +123,14 @@ if tab4:
         - 🌀 Né đòn: **{char['agility']}%**
         """)
         st.info("💡 Đây là nơi bạn có thể thêm hệ thống chiến đấu sau.")
-        
-# ======================= TAB 5: Reset DB =======================
-with tab5:
-    st.subheader("🧨 Reset toàn bộ dữ liệu")
 
-    # Không tiết lộ pass, không hướng dẫn
-    password = st.text_input("Mã xác nhận", type="password")
-
+# ===== KHÔNG TAB! Reset DB Ẩn Ở Góc Khuất =====
+with st.sidebar.expander("🔐"):
+    password = st.text_input("Xác thực admin", type="password", label_visibility="collapsed")
     if password == "duyanh":
-        st.warning("⚠️ Hành động nguy hiểm! Toàn bộ dữ liệu nhân vật sẽ bị xoá.")
-
-        if st.button("💥 Xoá toàn bộ nhân vật"):
+        if st.button("💥 Reset toàn bộ dữ liệu"):
             conn = create_connection()
             conn.execute("DELETE FROM characters")
             conn.commit()
             conn.close()
-            st.success("💣 Đã xoá toàn bộ nhân vật!")
-    elif password:
-        st.error("❌ Mã xác nhận không đúng.")
+            st.success("💣 Đã reset toàn bộ database!")
