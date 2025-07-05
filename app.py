@@ -102,7 +102,7 @@ with tab2:
 with tab3:
     st.header("🚀 Chuẩn bị Trận Đấu")
 
-    # Reset flag
+    # Reset cờ
     st.session_state.battle_started = False
 
     if "player1" not in st.session_state:
@@ -162,9 +162,30 @@ with tab3:
         player1 = create_character_from_dict(info1)
         player2 = create_character_from_dict(info2)
 
+        # Tung xúc xắc xác định lượt đầu
+        import random as rd
+        p1_roll, p2_roll = rd.randint(1, 6), rd.randint(1, 6)
+        if p1_roll >= p2_roll:
+            attacker, defender = player1, player2
+        else:
+            attacker, defender = player2, player1
+
+        # Lưu vào session
+        st.session_state.player1 = player1
+        st.session_state.player2 = player2
+        st.session_state.attacker = attacker
+        st.session_state.defender = defender
+        st.session_state.round_index = 1
+        st.session_state.turn = 1
+        st.session_state.combat_logs = []
+
+        # Đây là dòng QUAN TRỌNG GIÚP MỞ TAB 4
+        st.session_state.selected_character = True
+        st.session_state.battle_started = True
         st.session_state.battle_ready = True
-        st.session_state.selected_character = True  # 👈 THÊM DÒNG NÀY
-        st.success("🎯 Chiến đấu sẵn sàng! Hãy sang Tab Chiến Đấu!")
+
+        st.success(f"🎯 Chiến đấu sẵn sàng! {attacker.name} đi trước!")
+        st.info("👉 Chuyển qua tab **⚔️ Chiến Đấu** để bắt đầu hành động!")
     else:
         st.info("📌 Hãy chọn đủ hai nhân vật trước khi bắt đầu.")
 
