@@ -102,16 +102,16 @@ with tab2:
 with tab3:
     st.header("🚀 Chuẩn bị Trận Đấu")
 
-    # Reset cờ
-    st.session_state.battle_started = False
+    # Init biến nếu chưa có
+    for key in ["player1", "player2", "attacker", "defender", "round_index", "turn", "combat_logs", "is_bot"]:
+        if key not in st.session_state:
+            st.session_state[key] = None
+    if "battle_started" not in st.session_state:
+        st.session_state.battle_started = False
+    if "selected_character" not in st.session_state:
+        st.session_state.selected_character = False
 
-    if "player1" not in st.session_state:
-        st.session_state.player1 = None
-    if "player2" not in st.session_state:
-        st.session_state.player2 = None
-    if "is_bot" not in st.session_state:
-        st.session_state.is_bot = False
-
+    # ===== Chọn chế độ =====
     mode = st.radio("🎮 Chọn chế độ chơi", ["PvP – Người vs Người", "PvE – Người vs Máy"])
     is_bot = mode == "PvE – Người vs Máy"
     st.session_state.is_bot = is_bot
@@ -121,40 +121,34 @@ with tab3:
     # === Người chơi 1 ===
     with col1:
         st.markdown("### 🧙 Người chơi 1")
-        species1 = st.selectbox("🔮 Chọn chủng loài", list(species_base_stats.keys()), key="sp1-select")
+        species1 = st.selectbox("🔮 Chọn loài", list(species_base_stats.keys()), key="sp1-select")
         df1 = get_all_characters()
         df1 = df1[df1["species"] == species1]
 
         if not df1.empty:
-            name1 = st.selectbox("🧬 Chọn nhân vật", df1["name"].tolist(), key="char1-select")
-            if st.button("🎲 Random NV 1"):
-                name1 = df1.sample(1)["name"].values[0]
-                st.session_state["char1-select"] = name1
-                st.success(f"✅ Đã random: {name1}")
+            name1 = st.selectbox("🧬 Nhân vật", df1["name"].tolist(), key="char1-select")
         else:
-            st.warning("⚠️ Không có nhân vật cho species này.")
             name1 = None
+            st.warning("⚠️ Không có nhân vật cho loài này.")
 
     # === Người chơi 2 hoặc Bot ===
     with col2:
-        title = "🤖 Bot" if is_bot else "🧙 Người chơi 2"
-        st.markdown(f"### {title}")
-        species2 = st.selectbox("🔮 Chọn chủng loài", list(species_base_stats.keys()), key="sp2-select")
+        st.markdown(f"### {'🤖 Bot' if is_bot else '🧙 Người chơi 2'}")
+        species2 = st.selectbox("🔮 Chọn loài", list(species_base_stats.keys()), key="sp2-select")
         df2 = get_all_characters()
         df2 = df2[df2["species"] == species2]
 
         if not df2.empty:
-            name2 = st.selectbox("🧬 Chọn nhân vật", df2["name"].tolist(), key="char2-select")
-            if st.button("🎲 Random NV 2"):
-                name2 = df2.sample(1)["name"].values[0]
-                st.session_state["char2-select"] = name2
-                st.success(f"✅ Đã random: {name2}")
+            name2 = st.selectbox("🧬 Nhân vật", df2["name"].tolist(), key="char2-select")
         else:
-            st.warning("⚠️ Không có nhân vật cho species này.")
             name2 = None
+            st.warning("⚠️ Không có nhân vật cho loài này.")
 
-    # === Bắt đầu chiến đấu ===
+    # ===== Nút bắt đầu chiến đấu =====
     if st.button("🚀 Bắt đầu chiến đấu") and name1 and name2:
+        from models import create_character_from_dict
+        import random as rd
+
         df = get_all_characters()
         info1 = df[df["name"] == name1].iloc[0].to_dict()
         info2 = df[df["name"] == name2].iloc[0].to_dict()
@@ -162,15 +156,14 @@ with tab3:
         player1 = create_character_from_dict(info1)
         player2 = create_character_from_dict(info2)
 
-        # Tung xúc xắc xác định lượt đầu
-        import random as rd
+        # Tung xúc xắc
         p1_roll, p2_roll = rd.randint(1, 6), rd.randint(1, 6)
         if p1_roll >= p2_roll:
             attacker, defender = player1, player2
         else:
             attacker, defender = player2, player1
 
-        # Lưu vào session
+        # Gán vào session
         st.session_state.player1 = player1
         st.session_state.player2 = player2
         st.session_state.attacker = attacker
@@ -178,16 +171,13 @@ with tab3:
         st.session_state.round_index = 1
         st.session_state.turn = 1
         st.session_state.combat_logs = []
-
-        # Đây là dòng QUAN TRỌNG GIÚP MỞ TAB 4
-        st.session_state.selected_character = True
         st.session_state.battle_started = True
-        st.session_state.battle_ready = True
+        st.session_state.selected_character = True  # 👉 để mở tab 4
 
-        st.success(f"🎯 Chiến đấu sẵn sàng! {attacker.name} đi trước!")
-        st.info("👉 Chuyển qua tab **⚔️ Chiến Đấu** để bắt đầu hành động!")
+        st.success(f"🎯 {attacker.name} tung xúc xắc đi trước!")
+        st.info("👉 Chuyển qua tab ⚔️ Chiến Đấu để bắt đầu hành động!")
     else:
-        st.info("📌 Hãy chọn đủ hai nhân vật trước khi bắt đầu.")
+        st.info("📌 Hãy chọn đủ 2 nhân vật để bắt đầu.")
 
 # ===== TAB 4: Chiến đấu =====
 if tab4:
@@ -201,41 +191,33 @@ if tab4:
             dfd = st.session_state.defender
             round_idx = st.session_state.round_index
 
-            st.markdown(f"## 🔥 Vòng {round_idx} – {atk.name} ra tay trước!")
+            st.markdown(f"## 🔥 Vòng {round_idx} – {atk.name} hành động!")
 
             # ===== Thông tin nhân vật =====
             col1, col2 = st.columns(2)
-            with col1:
-                st.subheader(f"🧍 {atk.name} ({atk.species})")
+            def show_info(p):
+                st.subheader(f"🧍 {p.name} ({p.species})")
                 st.markdown(f"""
-                - 🎭 Vai trò: **{atk.role}**  
-                - 🗡️ Sức mạnh: **{atk.atk}**  
-                - 🔋 Mana: **{atk.current_stamina}/{atk.stamina}**  
-                - ❤️ Máu: **{atk.hp}/{atk.max_hp}**  
-                - 🎯 Crit: **{atk.crit}%**  
-                - 🌀 Né đòn: **{atk.dodge}%**
+                - 🎭 Vai trò: **{p.role}**  
+                - 🗡️ Sức mạnh: **{p.atk}**  
+                - 🔋 Mana: **{p.current_stamina}/{p.stamina}**  
+                - ❤️ Máu: **{p.hp}/{p.max_hp}**  
+                - 🎯 Crit: **{p.crit}%**  
+                - 🌀 Né đòn: **{p.dodge}%**
                 """)
 
+            with col1:
+                show_info(atk)
             with col2:
-                st.subheader(f"🧍 {dfd.name} ({dfd.species})")
-                st.markdown(f"""
-                - 🎭 Vai trò: **{dfd.role}**  
-                - 🗡️ Sức mạnh: **{dfd.atk}**  
-                - 🔋 Mana: **{dfd.current_stamina}/{dfd.stamina}**  
-                - ❤️ Máu: **{dfd.hp}/{dfd.max_hp}**  
-                - 🎯 Crit: **{dfd.crit}%**  
-                - 🌀 Né đòn: **{dfd.dodge}%**
-                """)
+                show_info(dfd)
 
             # ===== THỰC HIỆN HÀNH ĐỘNG =====
             st.divider()
             st.subheader("🎬 Hành động đang diễn ra...")
 
-            # Bắt đầu lượt nếu có hàm start_turn
             if hasattr(atk, "start_turn"):
                 atk.start_turn()
 
-            # Gọi hành động
             if st.session_state.is_bot and atk == st.session_state.player2:
                 atk.choose_skill(dfd, auto=True)
             else:
@@ -244,7 +226,7 @@ if tab4:
                 else:
                     atk.attack(dfd)
 
-            # Lưu nhật ký hành động
+            # Lưu log
             st.session_state.combat_logs += atk.get_logs()
             atk.clear_logs()
 
@@ -259,25 +241,24 @@ if tab4:
                 st.success(f"🏆 {dfd.name} LẬT KÈO CHIẾN THẮNG!")
                 st.session_state.battle_started = False
             else:
-                # Hoán đổi lượt
                 st.session_state.attacker, st.session_state.defender = dfd, atk
                 st.session_state.turn += 1
                 if st.session_state.turn % 2 == 1:
                     st.session_state.round_index += 1
 
-            # ===== HIỂN THỊ NHẬT KÝ =====
+            # ===== LOGS =====
             st.divider()
             st.subheader("📜 Nhật ký chiến đấu")
             for log in st.session_state.combat_logs[::-1][:10]:
                 st.markdown(f"- {log}")
 
-            # ===== GIẢM MÁU THEO THỜI GIAN =====
+            # ===== SƯƠNG MÙ TỬ KHÍ =====
             if st.session_state.turn >= 41:
-                decay_hp = ((st.session_state.turn - 21) // 20) * 100
+                decay = ((st.session_state.turn - 21) // 20) * 100
                 for p in [atk, dfd]:
                     if p.hp > 200:
-                        p.hp = max(1, p.hp - decay_hp)
-                        st.warning(f"🌫️ {p.name} mất {decay_hp} HP do sương mù tử khí bao phủ đấu trường!")
+                        p.hp = max(1, p.hp - decay)
+                        st.warning(f"🌫️ {p.name} mất {decay} HP do sương mù tử khí!")
 
 # ===== KHÔNG TAB! Reset DB Ẩn Ở Góc Khuất =====
 with st.sidebar.expander("🔐"):
