@@ -29,29 +29,74 @@ with tab1:
 # Tab 2: Quản lý
 with tab2:
     st.subheader("🧬 Tạo nhân vật mới")
+
     ten = st.text_input("Tên nhân vật")
     chon_species = st.selectbox("Chọn loài", list(species_base_stats.keys()))
+
     if st.button("🎲 Tạo nhân vật"):
         if ten:
             base = species_base_stats[chon_species]
-            char = {"name": ten, "species": chon_species, "role": base["role"]}
+            char = {
+                "name": ten,
+                "species": chon_species,
+                "role": base["role"],
+            }
             for attr in ["strength", "stamina", "vitality", "dexterity", "agility"]:
                 char[attr] = rand_stat(attr, base[attr])
+
             insert_character(char)
             st.success(f"✅ Đã tạo nhân vật {ten}")
         else:
-            st.warning("⚠️ Nhập tên trước đã!")
+            st.warning("⚠️ Nhập tên trước nghen!")
 
-    st.subheader("📋 Danh sách")
+    st.divider()
+    st.subheader("📋 Danh sách nhân vật")
+
     df = get_all_characters()
-    st.dataframe(df)
+    species_list = list(species_base_stats.keys())
+    species_filter = st.selectbox("🔍 Lọc theo loài", ["Tất cả"] + species_list)
 
+    if species_filter != "Tất cả":
+        df = df[df["species"] == species_filter]
+
+    # 🧪 Hiển thị biểu tượng & màu theo species
+    def get_species_icon(species):
+        icons = {
+            "Witch": "🧙‍♀️",
+            "Vampire": "🧛",
+            "Werewolf": "🐺"
+        }
+        return icons.get(species, "❓")
+
+    def style_row(row):
+        colors = {
+            "Witch": "#fef9e7",
+            "Vampire": "#fdecea",
+            "Werewolf": "#eafaf1"
+        }
+        return [f"background-color: {colors.get(row['species'], '#fff')}" for _ in row]
+
+    if not df.empty:
+        df["🧬 Species"] = df["species"].apply(lambda s: f"{get_species_icon(s)} {s}")
+        df_view = df[["id", "name", "🧬 Species", "role", "strength", "stamina", "vitality", "dexterity", "agility"]]
+
+        st.dataframe(
+            df_view.style.apply(style_row, axis=1),
+            use_container_width=True
+        )
+    else:
+        st.info("⚠️ Không có nhân vật nào phù hợp.")
+
+    st.divider()
     st.subheader("🗑️ Xoá nhân vật")
+
     if not df.empty and "id" in df.columns:
         del_id = st.selectbox("Chọn ID để xoá", df["id"])
         if st.button("🗑️ Xoá"):
             delete_character(del_id)
-            st.success("🧹 Đã xoá!")
+            st.success("🧹 Đã xoá thành công!")
+    else:
+        st.info("⛔ Không có nhân vật nào để xoá!")
 
 # Tab 3: Bắt đầu
 with tab3:
