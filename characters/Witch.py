@@ -1,3 +1,7 @@
+import math
+import random as rd
+from character_base import Character
+
 class Witch(Character):
     def __init__(self, name, species, atk, stamina, hp, crit, dodge):
         super().__init__(name, species, atk, stamina, hp, crit, dodge)
