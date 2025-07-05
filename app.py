@@ -181,6 +181,7 @@ if tab4:
 
             st.markdown(f"## 🔥 Vòng {round_idx} – {atk.name} ra tay trước!")
 
+            # ===== Thông tin nhân vật =====
             col1, col2 = st.columns(2)
             with col1:
                 st.subheader(f"🧍 {atk.name} ({atk.species})")
@@ -208,7 +209,11 @@ if tab4:
             st.divider()
             st.subheader("🎬 Hành động đang diễn ra...")
 
-            # Gọi hành động chiến đấu
+            # Bắt đầu lượt nếu có hàm start_turn
+            if hasattr(atk, "start_turn"):
+                atk.start_turn()
+
+            # Gọi hành động
             if st.session_state.is_bot and atk == st.session_state.player2:
                 atk.choose_skill(dfd, auto=True)
             else:
@@ -217,7 +222,7 @@ if tab4:
                 else:
                     atk.attack(dfd)
 
-            # Lưu nhật ký
+            # Lưu nhật ký hành động
             st.session_state.combat_logs += atk.get_logs()
             atk.clear_logs()
 
@@ -241,10 +246,10 @@ if tab4:
             # ===== HIỂN THỊ NHẬT KÝ =====
             st.divider()
             st.subheader("📜 Nhật ký chiến đấu")
-            for log in st.session_state.combat_logs[::-1][:10]:  # hiển thị 10 dòng gần nhất
+            for log in st.session_state.combat_logs[::-1][:10]:
                 st.markdown(f"- {log}")
 
-            # ===== CẬP NHẬT THÊM =====
+            # ===== GIẢM MÁU THEO THỜI GIAN =====
             if st.session_state.turn >= 41:
                 decay_hp = ((st.session_state.turn - 21) // 20) * 100
                 for p in [atk, dfd]:
