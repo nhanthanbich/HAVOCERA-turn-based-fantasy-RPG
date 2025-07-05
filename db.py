@@ -22,6 +22,7 @@ def create_table():
             )
         """)
 
+
 def insert_character(char):
     with create_connection() as conn:
         conn.execute("""
