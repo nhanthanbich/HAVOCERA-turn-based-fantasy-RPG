@@ -179,23 +179,28 @@ with tab3:
     else:
         st.info("📌 Hãy chọn đủ 2 nhân vật để bắt đầu.")
 
-# ===== TAB 4: Chiến đấu =====
+# === BẮT ĐẦU TAB 4 ===
 if tab4:
     with tab4:
         st.header("⚔️ Trận Chiến Bắt Đầu!")
 
         if not st.session_state.get("battle_started", False):
             st.info("💡 Hãy chọn nhân vật và nhấn 'Bắt đầu chiến đấu' ở Tab 3 trước khi vào trận.")
-        else:
-            atk = st.session_state.attacker
-            dfd = st.session_state.defender
-            round_idx = st.session_state.round_index
+            st.stop()
 
-            st.markdown(f"## 🔥 Vòng {round_idx} – {atk.name} hành động!")
+        atk = st.session_state.attacker
+        dfd = st.session_state.defender
+        round_idx = st.session_state.round_index
 
-            # ===== Thông tin nhân vật =====
-            col1, col2 = st.columns(2)
-            def show_info(p):
+        # DEBUG nếu cần
+        # st.write("🧪 ATK:", vars(atk))
+        # st.write("🧪 DEF:", vars(dfd))
+
+        st.markdown(f"## 🔥 Vòng {round_idx} – {atk.name} hành động!")
+
+        # ===== THÔNG TIN NHÂN VẬT =====
+        def show_info(p):
+            try:
                 st.subheader(f"🧍 {p.name} ({p.species})")
                 st.markdown(f"""
                 - 🎭 Vai trò: **{p.role}**  
@@ -205,60 +210,67 @@ if tab4:
                 - 🎯 Crit: **{p.crit}%**  
                 - 🌀 Né đòn: **{p.dodge}%**
                 """)
+            except Exception as e:
+                st.error(f"💥 Không thể hiển thị thông tin nhân vật: {e}")
+                st.stop()
 
+        try:
+            col1, col2 = st.columns(2)
             with col1:
                 show_info(atk)
             with col2:
                 show_info(dfd)
+        except Exception as e:
+            st.error(f"🚫 Không thể tạo layout nhân vật: {e}")
+            st.stop()
 
-            # ===== THỰC HIỆN HÀNH ĐỘNG =====
-            st.divider()
-            st.subheader("🎬 Hành động đang diễn ra...")
+        # ===== HÀNH ĐỘNG =====
+        st.divider()
+        st.subheader("🎬 Hành động đang diễn ra...")
 
-            if hasattr(atk, "start_turn"):
-                atk.start_turn()
+        if hasattr(atk, "start_turn"):
+            atk.start_turn()
 
-            if st.session_state.is_bot and atk == st.session_state.player2:
-                atk.choose_skill(dfd, auto=True)
+        if st.session_state.is_bot and atk == st.session_state.player2:
+            atk.choose_skill(dfd, auto=True)
+        else:
+            if hasattr(atk, "choose_skill"):
+                atk.choose_skill(dfd)
             else:
-                if hasattr(atk, "choose_skill"):
-                    atk.choose_skill(dfd)
-                else:
-                    atk.attack(dfd)
+                atk.attack(dfd)
 
-            # Lưu log
-            st.session_state.combat_logs += atk.get_logs()
-            atk.clear_logs()
+        st.session_state.combat_logs += atk.get_logs()
+        atk.clear_logs()
 
-            # ===== KIỂM TRA KẾT THÚC =====
-            if atk.hp <= 0 and dfd.hp <= 0:
-                st.error("☠️ Cả hai chiến binh đã gục ngã cùng lúc. Hòa nhau!")
-                st.session_state.battle_started = False
-            elif dfd.hp <= 0:
-                st.success(f"🏆 {atk.name} CHIẾN THẮNG TUYỆT ĐỐI!")
-                st.session_state.battle_started = False
-            elif atk.hp <= 0:
-                st.success(f"🏆 {dfd.name} LẬT KÈO CHIẾN THẮNG!")
-                st.session_state.battle_started = False
-            else:
-                st.session_state.attacker, st.session_state.defender = dfd, atk
-                st.session_state.turn += 1
-                if st.session_state.turn % 2 == 1:
-                    st.session_state.round_index += 1
+        # ===== KẾT THÚC TRẬN =====
+        if atk.hp <= 0 and dfd.hp <= 0:
+            st.error("☠️ Cả hai chiến binh đã gục ngã cùng lúc. Hòa nhau!")
+            st.session_state.battle_started = False
+        elif dfd.hp <= 0:
+            st.success(f"🏆 {atk.name} CHIẾN THẮNG TUYỆT ĐỐI!")
+            st.session_state.battle_started = False
+        elif atk.hp <= 0:
+            st.success(f"🏆 {dfd.name} LẬT KÈO CHIẾN THẮNG!")
+            st.session_state.battle_started = False
+        else:
+            st.session_state.attacker, st.session_state.defender = dfd, atk
+            st.session_state.turn += 1
+            if st.session_state.turn % 2 == 1:
+                st.session_state.round_index += 1
 
-            # ===== LOGS =====
-            st.divider()
-            st.subheader("📜 Nhật ký chiến đấu")
-            for log in st.session_state.combat_logs[::-1][:10]:
-                st.markdown(f"- {log}")
+        # ===== LOG =====
+        st.divider()
+        st.subheader("📜 Nhật ký chiến đấu")
+        for log in st.session_state.combat_logs[::-1][:10]:
+            st.markdown(f"- {log}")
 
-            # ===== SƯƠNG MÙ TỬ KHÍ =====
-            if st.session_state.turn >= 41:
-                decay = ((st.session_state.turn - 21) // 20) * 100
-                for p in [atk, dfd]:
-                    if p.hp > 200:
-                        p.hp = max(1, p.hp - decay)
-                        st.warning(f"🌫️ {p.name} mất {decay} HP do sương mù tử khí!")
+        # ===== SƯƠNG MÙ =====
+        if st.session_state.turn >= 41:
+            decay = ((st.session_state.turn - 21) // 20) * 100
+            for p in [atk, dfd]:
+                if p.hp > 200:
+                    p.hp = max(1, p.hp - decay)
+                    st.warning(f"🌫️ {p.name} mất {decay} HP do sương mù tử khí!")
 
 # ===== KHÔNG TAB! Reset DB Ẩn Ở Góc Khuất =====
 with st.sidebar.expander("🔐"):
