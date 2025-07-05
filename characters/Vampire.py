@@ -19,7 +19,7 @@ class Vampire(Character):
         if self.hp > 0 and self.hp < self.max_hp * 0.2 and not self.khat_mau:
             self.khat_mau = True
             self.atk = math.ceil(self.atk * 1.5)
-            self.crit += 5
+            self.crit += 5  # Buff thêm crit khi Khát Máu
             self.hp = min(math.ceil(self.hp + 250), self.max_hp)
             print(f"{self.name} gầm lên trong cơn đói khát – KHÁT MÁU trỗi dậy! ATK tăng lên {self.atk}, Crit +5%, HP hồi thêm 250 → {self.hp}.")
         return hit
@@ -38,7 +38,7 @@ class Vampire(Character):
 
         print(f"{self.name} lao tới với ánh mắt khát máu, hắn chuẩn bị hút máu {enemy.name}!")
         if crit_rate == 2:
-            print("💢 CHÍ MẠNG! Cú cắn thấm đẫm máu!")
+            print(f"💢 CHÍ MẠNG! Cú cắn thấm đẫm máu!")
 
         result = enemy.take_damage(damage, self)
 
@@ -67,7 +67,14 @@ class Vampire(Character):
             return
 
         if auto:
-            raise NotImplementedError("Chức năng auto nên được định nghĩa trong VampireAI.")
+            expected_hp = enemy.hp
+            for sacrifice in reversed(range(1, max_te + 1)):
+                predicted_dmg = math.ceil(sacrifice * (rd.randint(17, 22) / 10)) + rd.randint(-8, 8)
+                if predicted_dmg >= expected_hp:
+                    chosen_sacrifice = sacrifice
+                    break
+            else:
+                chosen_sacrifice = max_te
         else:
             while True:
                 try:
@@ -136,11 +143,76 @@ class Vampire(Character):
         self.rebirth_uses += 1
 
     def choose_skill(self, enemy, auto=False):
+        if auto:
+            print(f"\n🤖 {self.name} (AI – Vampire) đang phân tích tình hình...")
+
+            danger_threshold = self.max_hp * 0.2
+            potential_danger = enemy.atk * 1.4 + 10  # Ước lượng địch sẽ gây ra
+
+            # 🎯 1. Nếu có Huyết Cầu → Ưu tiên ném
+            if self.huyet_cau > 0:
+                print(f"{self.name} vẫn còn Huyết Cầu – ưu tiên ném ngay!")
+                self.nem_huyet_cau(enemy)  # Tách logic ra hàm riêng nếu cần
+                return
+
+            # ☯️ 2. Nếu chuẩn bị nguy hiểm, nhưng chưa đủ điều kiện Tái Sinh, nghỉ dưỡng
+            if (
+                self.hp > danger_threshold and
+                (self.hp - potential_danger) <= danger_threshold and
+                self.rebirth_uses < 3 and
+                self.current_stamina < 21 and
+                not self.khat_mau
+            ):
+                print(f"⚠️ {self.name} cảm thấy sắp nguy – nghỉ để phục hồi trước Tái Sinh hoặc Khát Máu.")
+                self.rest()
+                return
+
+            # 🔄 3. Chỉ Tái Sinh khi:
+            #     - Đã Khát Máu rồi, hoặc
+            #     - Sắp chết (không thể chờ Khát Máu), và còn lượt dùng
+            if self.hp < danger_threshold and self.rebirth_uses < 3 and self.current_stamina >= 21:
+                if self.khat_mau or (self.hp - potential_danger <= 0):
+                    print("💀 Kích hoạt Tái Sinh!")
+                    self.tai_sinh()
+                    return
+                else:
+                    print("🔄 Chờ Khát Máu, chưa vội Tái Sinh.")
+                    self.rest()
+                    return
+
+            # 💉 4. Nếu đủ stamina và máu an toàn → cân nhắc Huyết Bạo
+            if self.current_stamina >= 11:
+                max_te = math.ceil(self.max_hp * 0.07)
+                enemy_dodge_risk = enemy.dodge > 35
+                vampire_safe = self.hp >= max_te + 10 and self.hp >= self.max_hp * 0.4
+
+                if vampire_safe and not enemy_dodge_risk:
+                    print("🩸 Thời cơ hoàn hảo – thi triển Huyết Bạo!")
+                    self.huyet_bao(enemy, auto=True)
+                    return
+                else:
+                    print("⏳ Chưa nên dùng Huyết Bạo – quá rủi ro hoặc máu thấp.")
+
+            # 🦇 5. Nếu máu thấp → ưu tiên Hấp Huyết
+            if self.hp < self.max_hp * 0.3 and self.current_stamina >= 2:
+                self.hap_huyet(enemy)
+                return
+
+            # ⚔️ 6. Nếu có stamina → dùng Hấp Huyết
+            if self.current_stamina >= 2:
+                self.hap_huyet(enemy)
+                return
+
+            # 💤 7. Nếu stamina cạn kiệt → đánh thường
+            self.attack(enemy)
+            return
+
+        # === Chế độ người chơi ===
         print(f"\n🧛 {self.name} (Ma cà rồng) chọn kỹ năng:")
         print("1. 👊  Đánh thường")
-        print("2. 🩸 Hấp Huyết (2 ⚡)")
-        print("3. 🔥 Huyết Bạo (11 ⚡)")
-        print("4. ♻️  Tái Sinh (21 ⚡)")
+        print("2. 🩸 Hấp Huyết (2 ⚡ Stamina)")
+        print("3. 🔥 Huyết Bạo (Hiến tế máu + Ném Huyết Cầu – 11 ⚡)")
+        print("4. ♻️  Tái Sinh (21 ⚡ – hồi HP ngẫu nhiên)")
         print("0. ⚑  Đầu hàng")
 
         choice = input("➤ Chọn kỹ năng: ").strip()
