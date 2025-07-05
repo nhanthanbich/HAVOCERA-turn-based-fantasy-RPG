@@ -163,6 +163,7 @@ with tab3:
         player2 = create_character_from_dict(info2)
 
         st.session_state.battle_ready = True
+        st.session_state.selected_character = True  # 👈 THÊM DÒNG NÀY
         st.success("🎯 Chiến đấu sẵn sàng! Hãy sang Tab Chiến Đấu!")
     else:
         st.info("📌 Hãy chọn đủ hai nhân vật trước khi bắt đầu.")
