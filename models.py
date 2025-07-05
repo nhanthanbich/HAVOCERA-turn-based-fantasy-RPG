@@ -1,11 +1,24 @@
 import random as rd
 
-def get_class_by_species(species_name):
-    return {
+def get_class_by_species(species):
+    class_map = {
         "Witch": Witch,
         "Vampire": Vampire,
-        "Werewolf": Werewolf
-    }.get(species_name, Character)  # fallback về class gốc nếu không có
+        "Werewolf": Werewolf,
+    }
+    return class_map.get(species, Character)
+
+def create_character_from_dict(info):
+    cls = get_class_by_species(info["species"])
+    return cls(
+        info["name"],
+        info["species"],
+        info["strength"],
+        info["stamina"],
+        info["vitality"],
+        info["dexterity"],
+        info["agility"]
+    )
 
 class Character:
     def __init__(self, name, species, atk, stamina, hp, crit, dodge):
