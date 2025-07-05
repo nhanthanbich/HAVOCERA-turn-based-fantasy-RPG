@@ -2,6 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import random as rd
+import os
 
 # =========================== DATABASE ===========================
 def create_connection():
@@ -46,7 +47,7 @@ def insert_character(char):
 def get_all_characters():
     conn = create_connection()
     df = pd.read_sql_query("SELECT * FROM characters", conn)
-    df.columns = [c.lower() for c in df.columns]  # Chuẩn hóa tên cột
+    df.columns = [c.lower() for c in df.columns]  # Chuẩn hóa cột
     conn.close()
     return df
 
@@ -136,27 +137,38 @@ with tab2:
     df = get_all_characters()
     st.dataframe(df)
 
+    st.subheader("🗑️ Xoá nhân vật")
     if not df.empty:
-        del_id = st.selectbox("Chọn ID để xoá", df["id"])
-        if st.button("🗑️ Xoá nhân vật"):
-            delete_character(del_id)
-            st.success("🧹 Đã xoá thành công!")
+        df.columns = [c.lower() for c in df.columns]
+        if "id" in df.columns:
+            del_id = st.selectbox("Chọn ID để xoá", df["id"])
+            if st.button("🗑️ Xoá"):
+                delete_character(del_id)
+                st.success("🧹 Đã xoá thành công!")
+        else:
+            st.error("⚠️ Không tìm thấy cột 'id' trong bảng dữ liệu.")
+    else:
+        st.info("⛔ Không có nhân vật nào để xoá!")
 
 # ======================= TAB 3: Bắt đầu ========================
 with tab3:
     st.subheader("🚀 Chọn nhân vật để bắt đầu")
     df = get_all_characters()
     if not df.empty:
-        char_names = df["name"].tolist()
-        selected_name = st.selectbox("Tên nhân vật", char_names)
-        if st.button("✅ Vào trận"):
-            info = df[df["name"] == selected_name].iloc[0].to_dict()
-            st.session_state.selected_character = info
-            st.success(f"🎉 Đã chọn {selected_name}! Tab chiến đấu đã mở 🔥")
+        df.columns = [c.lower() for c in df.columns]
+        if "name" in df.columns:
+            char_names = df["name"].tolist()
+            selected_name = st.selectbox("Tên nhân vật", char_names)
+            if st.button("✅ Vào trận"):
+                info = df[df["name"] == selected_name].iloc[0].to_dict()
+                st.session_state.selected_character = info
+                st.success(f"🎉 Đã chọn {selected_name}! Tab chiến đấu đã mở 🔥")
+        else:
+            st.error("❌ Không tìm thấy cột 'name'.")
     else:
         st.warning("⚠️ Chưa có nhân vật nào!")
 
-# ======================= TAB 4: Chiến đấu (chỉ hiển thị khi đã chọn) ========================
+# ======================= TAB 4: Chiến đấu (ẩn nếu chưa chọn) ========================
 if st.session_state.selected_character:
     st.markdown("---")
     with st.expander("⚔️ Chiến Đấu", expanded=True):
@@ -171,6 +183,6 @@ if st.session_state.selected_character:
         - 🎯 Crit: **{char['dexterity']}%**
         - 🌀 Né đòn: **{char['agility']}%**
         """)
-        st.info("💡 Bạn có thể thêm hệ thống skill, địch và combat ở đây.")
+        st.info("💡 Đây là nơi bạn có thể thêm hệ thống combat sau.")
 else:
     st.markdown("### 🔒 Tab chiến đấu sẽ xuất hiện sau khi chọn nhân vật.")
