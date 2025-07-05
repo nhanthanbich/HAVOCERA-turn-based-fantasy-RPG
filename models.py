@@ -1,4 +1,12 @@
 import random as rd
+
+def get_class_by_species(species_name):
+    return {
+        "Witch": Witch,
+        "Vampire": Vampire,
+        "Werewolf": Werewolf
+    }.get(species_name, Character)  # fallback về class gốc nếu không có
+
 class Character:
     def __init__(self, name, species, atk, stamina, hp, crit, dodge):
         self.name = name
