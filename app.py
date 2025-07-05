@@ -6,7 +6,7 @@ import os
 
 # =========================== DATABASE ===========================
 def create_connection():
-    return sqlite3.connect("characters.db", check_same_thread=False)
+    return sqlite3.connect("nhanvat.db", check_same_thread=False)
 
 def create_table():
     conn = create_connection()
