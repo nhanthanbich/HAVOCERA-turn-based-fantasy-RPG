@@ -1,7 +1,7 @@
 import sqlite3
 import pandas as pd
 
-DB_NAME = "nhanvat.db"
+DB_NAME = "character.db"
 
 def create_connection():
     return sqlite3.connect(DB_NAME, check_same_thread=False)
