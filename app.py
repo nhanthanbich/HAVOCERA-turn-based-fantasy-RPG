@@ -1,7 +1,7 @@
 import streamlit as st
 from db import create_table, insert_character, get_all_characters, delete_character, create_connection
 from stats import species_base_stats, rand_stat
-from models import Witch, Vampire, Werewolf
+from models import Witch, Vampire, Werewolf, get_class_by_species
 
 st.set_page_config(page_title="Game Chiến Đấu", layout="wide")
 st.title("⚔️ Game Chiến Đấu Theo Lượt")
@@ -159,9 +159,8 @@ with tab3:
         info1 = df[df["name"] == name1].iloc[0].to_dict()
         info2 = df[df["name"] == name2].iloc[0].to_dict()
 
-        class_map = {"Witch": Witch, "Vampire": Vampire, "Werewolf": Werewolf}
-        st.session_state.player1 = class_map[info1["species"]](**info1)
-        st.session_state.player2 = class_map[info2["species"]](**info2)
+        player1 = get_class_by_species(info1["species"])(**info1)
+        player2 = get_class_by_species(info2["species"])(**info2)
 
         st.session_state.battle_ready = True
         st.success("🎯 Chiến đấu sẵn sàng! Hãy sang Tab Chiến Đấu!")
