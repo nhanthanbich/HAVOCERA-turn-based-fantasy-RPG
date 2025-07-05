@@ -1,30 +1,3 @@
-import sqlite3
-import random as rd
-from tabulate import tabulate
-from character_base import Character
-
-# ========================= KẾT NỐI DB =========================
-
-DB_PATH = "data/havocera.db"
-
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS characters (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            species TEXT NOT NULL,
-            strength INTEGER,
-            stamina INTEGER,
-            vitality INTEGER,
-            dexterity INTEGER,
-            agility INTEGER
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
 # ========================= LOAD DỮ LIỆU =========================
 
 def load_all_characters():
