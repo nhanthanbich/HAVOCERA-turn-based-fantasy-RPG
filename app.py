@@ -5,8 +5,7 @@ import random as rd
 
 # =========================== DATABASE ===========================
 def create_connection():
-    conn = sqlite3.connect("characters.db", check_same_thread=False)
-    return conn
+    return sqlite3.connect("characters.db", check_same_thread=False)
 
 def create_table():
     conn = create_connection()
@@ -47,6 +46,7 @@ def insert_character(char):
 def get_all_characters():
     conn = create_connection()
     df = pd.read_sql_query("SELECT * FROM characters", conn)
+    df.columns = [c.lower() for c in df.columns]  # Chuẩn hóa tên cột
     conn.close()
     return df
 
@@ -72,7 +72,7 @@ def rand_stat(attr, base):
         delta = 15
     return max(0, base + rd.randint(-delta, delta))
 
-# =========================== CLASS CHARACTER ===========================
+# =========================== CHARACTER CLASS ===========================
 class Character:
     def __init__(self, info):
         self.name = info["name"]
@@ -89,7 +89,7 @@ class Vampire(Character): pass
 class Werewolf(Character): pass
 
 # =========================== STREAMLIT UI ===========================
-st.set_page_config(page_title="Chiến Đấu Theo Lượt", layout="wide")
+st.set_page_config(page_title="Game Chiến Đấu", layout="wide")
 st.title("⚔️ Game Chiến Đấu Theo Lượt")
 
 create_table()
@@ -99,21 +99,21 @@ if "selected_character" not in st.session_state:
 
 tab1, tab2, tab3 = st.tabs(["📘 Hướng Dẫn", "🛠️ Quản Lý Nhân Vật", "🎯 Bắt Đầu"])
 
-# TAB 1: Hướng dẫn
+# ======================= TAB 1: Hướng Dẫn ========================
 with tab1:
     st.markdown("""
-    ### 📖 Hướng dẫn chơi
-    1. Tạo nhân vật theo 1 trong 3 loài: Witch 🧙, Vampire 🧛, Werewolf 🐺.
-    2. Mỗi loài có chỉ số riêng. Khi tạo, chỉ số sẽ biến thiên nhẹ quanh giá trị gốc.
-    3. Chọn nhân vật để bắt đầu chiến đấu.
-    4. Tab "Chiến đấu" sẽ mở khi đã chọn nhân vật thành công.
+    ## 📖 Hướng Dẫn Chơi
+
+    - **Tạo nhân vật** ở tab thứ 2: chọn tên + loài
+    - **Chọn nhân vật** ở tab thứ 3 để bắt đầu
+    - Khi chọn xong, hệ thống sẽ hiện tab **Chiến Đấu**
     """)
 
-# TAB 2: Tạo/sửa/xoá
+# ======================= TAB 2: Quản lý nhân vật ========================
 with tab2:
     st.subheader("🧬 Tạo nhân vật mới")
     ten = st.text_input("Tên nhân vật")
-    chon_species = st.selectbox("Chọn chủng tộc", list(species_base_stats.keys()))
+    chon_species = st.selectbox("Chọn loài", list(species_base_stats.keys()))
     if st.button("🎲 Tạo nhân vật"):
         if ten:
             base = species_base_stats[chon_species]
@@ -130,43 +130,47 @@ with tab2:
             insert_character(char)
             st.success(f"✅ Đã tạo nhân vật {ten}")
         else:
-            st.warning("⚠️ Nhập tên đã nghen")
+            st.warning("⚠️ Nhập tên trước nghen!")
 
-    st.subheader("🗃️ Danh sách nhân vật")
+    st.subheader("📋 Danh sách nhân vật")
     df = get_all_characters()
     st.dataframe(df)
 
-    char_id_to_delete = st.number_input("ID cần xoá", step=1, min_value=1)
-    if st.button("🗑️ Xoá nhân vật"):
-        delete_character(char_id_to_delete)
-        st.success(f"🚮 Đã xoá ID {char_id_to_delete}")
+    if not df.empty:
+        del_id = st.selectbox("Chọn ID để xoá", df["id"])
+        if st.button("🗑️ Xoá nhân vật"):
+            delete_character(del_id)
+            st.success("🧹 Đã xoá thành công!")
 
-# TAB 3: Bắt đầu chọn nhân vật
+# ======================= TAB 3: Bắt đầu ========================
 with tab3:
     st.subheader("🚀 Chọn nhân vật để bắt đầu")
     df = get_all_characters()
     if not df.empty:
         char_names = df["name"].tolist()
-        chon = st.selectbox("Chọn nhân vật", char_names)
-        if st.button("✅ Xác nhận chọn"):
-            info = df[df["name"] == chon].iloc[0].to_dict()
+        selected_name = st.selectbox("Tên nhân vật", char_names)
+        if st.button("✅ Vào trận"):
+            info = df[df["name"] == selected_name].iloc[0].to_dict()
             st.session_state.selected_character = info
-            st.success(f"🎉 Đã chọn {chon}! Qua tab Chiến đấu nào~")
+            st.success(f"🎉 Đã chọn {selected_name}! Tab chiến đấu đã mở 🔥")
     else:
-        st.warning("⚠️ Chưa có nhân vật nào! Tạo ở tab Quản lý nha.")
+        st.warning("⚠️ Chưa có nhân vật nào!")
 
-# TAB 4: Chiến đấu (chỉ hiển thị nếu đã chọn)
+# ======================= TAB 4: Chiến đấu (chỉ hiển thị khi đã chọn) ========================
 if st.session_state.selected_character:
+    st.markdown("---")
     with st.expander("⚔️ Chiến Đấu", expanded=True):
-        char_info = st.session_state.selected_character
-        st.subheader(f"🔥 {char_info['name']} sẵn sàng chiến đấu!")
+        char = st.session_state.selected_character
+        st.subheader(f"🔥 {char['name']} ({char['species']}) sẵn sàng chiến đấu!")
+
         st.markdown(f"""
-        - Chủng tộc: **{char_info['species']}**
-        - Vai trò: **{char_info['role']}**
-        - Sức mạnh: {char_info['strength']}
-        - Mana (Stamina): {char_info['stamina']}
-        - Máu (Vitality): {char_info['vitality']}
-        - Tỉ lệ chí mạng: {char_info['dexterity']}%
-        - Né tránh: {char_info['agility']}%
+        - 🎭 Vai trò: **{char['role']}**
+        - 🗡️ Sức mạnh: **{char['strength']}**
+        - 🔋 Mana: **{char['stamina']}**
+        - ❤️ Máu: **{char['vitality']}**
+        - 🎯 Crit: **{char['dexterity']}%**
+        - 🌀 Né đòn: **{char['agility']}%**
         """)
-        st.info("💡 Đây là nơi bạn sẽ chiến đấu khi thêm kẻ địch và hệ thống combat!")
+        st.info("💡 Bạn có thể thêm hệ thống skill, địch và combat ở đây.")
+else:
+    st.markdown("### 🔒 Tab chiến đấu sẽ xuất hiện sau khi chọn nhân vật.")
