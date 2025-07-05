@@ -124,3 +124,22 @@ if tab4:
         - 🌀 Né đòn: **{char['agility']}%**
         """)
         st.info("💡 Đây là nơi bạn có thể thêm hệ thống chiến đấu sau.")
+        
+# ======================= TAB 5: Reset DB =======================
+with tab5:
+    st.subheader("🧨 Reset toàn bộ dữ liệu")
+
+    # Không tiết lộ pass, không hướng dẫn
+    password = st.text_input("Mã xác nhận", type="password")
+
+    if password == "duyanh":
+        st.warning("⚠️ Hành động nguy hiểm! Toàn bộ dữ liệu nhân vật sẽ bị xoá.")
+
+        if st.button("💥 Xoá toàn bộ nhân vật"):
+            conn = create_connection()
+            conn.execute("DELETE FROM characters")
+            conn.commit()
+            conn.close()
+            st.success("💣 Đã xoá toàn bộ nhân vật!")
+    elif password:
+        st.error("❌ Mã xác nhận không đúng.")
