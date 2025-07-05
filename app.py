@@ -1,6 +1,7 @@
 import streamlit as st
 from db import create_table, insert_character, get_all_characters, delete_character, create_connection
 from stats import species_base_stats, rand_stat
+from models import Witch, Vampire, Werewolf
 
 st.set_page_config(page_title="Game Chiến Đấu", layout="wide")
 st.title("⚔️ Game Chiến Đấu Theo Lượt")
