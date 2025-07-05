@@ -1,73 +1,67 @@
-import pandas as pd
+import sqlite3
 import random as rd
 from tabulate import tabulate
-from character_base import Character  # Giả định bạn có class cha Character
+from character_base import Character
+
+# ========================= KẾT NỐI DB =========================
+
+DB_PATH = "data/havocera.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS characters (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            species TEXT NOT NULL,
+            strength INTEGER,
+            stamina INTEGER,
+            vitality INTEGER,
+            dexterity INTEGER,
+            agility INTEGER
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
 # ========================= LOAD DỮ LIỆU =========================
 
-def load_base_stats(base_path="data/HAVOCERA.xlsx"):
-    try:
-        df = pd.read_excel(base_path)
-        df = df[df["Species"].notna()]
-        stats_dict = {
-            row["Species"]: {
-                "Role(s)": row["Role(s)"],
-                "Strength": row["Strength"],
-                "Stamina": row["Stamina"],
-                "Vitality": row["Vitality"],
-                "Dexterity": row["Dexterity"],
-                "Agility": row["Agility"]
-            }
-            for _, row in df.iterrows()
-        }
-        return stats_dict
-    except Exception as e:
-        print(f"⚠️ Lỗi khi load base stats: {e}")
-        return {}
+def load_all_characters():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT name, species, strength, stamina, vitality, dexterity, agility FROM characters")
+    rows = cursor.fetchall()
+    conn.close()
 
-def load_character_classes(characters_path="data/HAVOCERA_Characters.xlsx"):
-    try:
-        with pd.ExcelFile(characters_path) as xls:
-            return {sheet_name: pd.read_excel(xls, sheet_name=sheet_name) for sheet_name in xls.sheet_names}
-    except FileNotFoundError:
-        print("⚠️ File nhân vật không tồn tại. Kiểm tra lại đường dẫn.")
-        return {}
+    characters = []
+    for row in rows:
+        name, species, str_, sta, vit, dex, agi = row
+        class_type = globals().get(species, Character)
+        characters.append(class_type(name, species, str_, sta, vit, dex, agi))
+    return characters
 
-def get_species_list(path):
-    with pd.ExcelFile(path) as xls:
-        return xls.sheet_names
+def load_characters_by_species(species_name):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT name, species, strength, stamina, vitality, dexterity, agility FROM characters WHERE species = ?", (species_name,))
+    rows = cursor.fetchall()
+    conn.close()
 
-def load_characters(path):
-    species_list = get_species_list(path)
-    all_chars = []
-    for sp in species_list:
-        df = pd.read_excel(path, sheet_name=sp)
-        class_type = globals().get(sp, Character)
-        for _, row in df.iterrows():
-            c = class_type(
-                row['Name'], sp,
-                row['Strength'], row['Stamina'], row['Vitality'],
-                row['Dexterity'], row['Agility']
-            )
-            all_chars.append(c)
-    return all_chars
+    characters = []
+    class_type = globals().get(species_name, Character)
+    for row in rows:
+        name, species, str_, sta, vit, dex, agi = row
+        characters.append(class_type(name, species, str_, sta, vit, dex, agi))
+    return characters
 
-def load_characters_by_species(species_name, characters_path="data/HAVOCERA_Characters.xlsx"):
-    try:
-        df = pd.read_excel(characters_path, sheet_name=species_name)
-        characters = []
-        class_type = globals().get(species_name, Character)
-        for _, row in df.iterrows():
-            character = class_type(
-                row['Name'], species_name,
-                row['Strength'], row['Stamina'], row['Vitality'],
-                row['Dexterity'], row['Agility']
-            )
-            characters.append(character)
-        return characters
-    except Exception as e:
-        print(f"Lỗi khi tải nhân vật thuộc species {species_name}: {e}")
-        return []
+def get_species_list():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT species FROM characters")
+    rows = cursor.fetchall()
+    conn.close()
+    return [r[0] for r in rows]
 
 # ========================= HIỂN THỊ =========================
 
@@ -84,15 +78,15 @@ def show_info(char):
 
 # ========================= CHỌN NHÂN VẬT =========================
 
-def choose_species(valid_classes):
+def choose_species(valid_species):
     print("📜 Các chủng loài có sẵn:")
-    for idx, sp in enumerate(valid_classes, 1):
+    for idx, sp in enumerate(valid_species, 1):
         print(f"{idx}. {sp}")
     while True:
         try:
             choice = int(input("Chọn số tương ứng với species: ")) - 1
-            if 0 <= choice < len(valid_classes):
-                return valid_classes[choice]
+            if 0 <= choice < len(valid_species):
+                return valid_species[choice]
             else:
                 print("Lựa chọn không hợp lệ, vui lòng nhập lại.")
         except ValueError:
