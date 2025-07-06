@@ -1,4 +1,5 @@
 import random as rd
+from stats import compute_combat_stats
 
 def get_class_by_species(species):
     class_map = {
@@ -10,14 +11,16 @@ def get_class_by_species(species):
 
 def create_character_from_dict(info):
     cls = get_class_by_species(info["species"])
+    combat_stats = compute_combat_stats(info)
+
     return cls(
         info["name"],
         info["species"],
-        info["strength"],
+        combat_stats["atk"],
         info["stamina"],
-        info["vitality"],
-        info["dexterity"],
-        info["agility"]
+        combat_stats["hp"],
+        combat_stats["crit"],
+        combat_stats["dodge"]
     )
 
 class Character:
