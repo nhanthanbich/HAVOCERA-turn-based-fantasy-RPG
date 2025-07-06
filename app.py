@@ -11,7 +11,7 @@ st.markdown("""
     -webkit-text-fill-color: transparent;
     font-weight: bold;">
     Havocera
-</span>: The rising of havoc ⚔️
+</span>1.0 : The rising of havoc ⚔️
 </h1>
 """, unsafe_allow_html=True)
 
