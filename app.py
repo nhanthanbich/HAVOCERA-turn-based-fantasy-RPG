@@ -3,8 +3,8 @@ from db import create_table, insert_character, get_all_characters, delete_charac
 from stats import species_base_stats, rand_stat
 from models import Witch, Vampire, Werewolf, get_class_by_species, create_character_from_dict
 
-st.set_page_config(page_title="Game Chiến Đấu", layout="wide")
-st.title("⚔️ Game Chiến Đấu Theo Lượt")
+st.set_page_config(page_title="Havocera", layout="wide")
+st.markdown("🌀 **Havocera**: The rising of havoc ⚔️", unsafe_allow_html=True)
 
 create_table()
 
