@@ -6,10 +6,10 @@ from models import Witch, Vampire, Werewolf, get_class_by_species, create_charac
 st.markdown("""
     <h1 style='font-size: 42px; font-weight: normal;'>
         🌀 
-        <span style='color:#8B0000; font-weight:bold; text-shadow: 0 0 6px #5c0000;'>
+        <span style='color:#8B0000; font-weight:bold: 0 0 6px #5c0000;'>
             Havoc
         </span>
-        <span style='color:#800080; font-weight:bold; text-shadow: 0 0 6px #4b0082;'>
+        <span style='color:#800080; font-weight:bold: 0 0 6px #4b0082;'>
             era
         </span>: The rising of havoc ⚔️
     </h1>
