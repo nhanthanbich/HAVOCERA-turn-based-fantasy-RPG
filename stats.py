@@ -15,6 +15,14 @@ species_base_stats = {
     },
 }
 
+def compute_combat_stats(info):
+    return {
+        "atk": info["strength"],
+        "hp": info["vitality"],
+        "crit": info["dexterity"],
+        "dodge": info["agility"]
+    }
+
 def rand_stat(attr, base):
     if attr == "vitality":
         delta = 115
