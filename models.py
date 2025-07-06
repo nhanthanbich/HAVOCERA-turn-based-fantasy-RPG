@@ -24,7 +24,7 @@ def create_character_from_dict(info):
     )
 
 class Character:
-    def __init__(self, name, species, atk, stamina, hp, crit, dodge):
+    def __init__(self, name, species, atk, stamina, hp, crit, dodge, role=None):
         self.name = name
         self.species = species
         self.atk = int(atk)
@@ -34,7 +34,7 @@ class Character:
         self.crit = int(crit)
         self.dodge = int(dodge)
         self.current_stamina = int(stamina)
-
+        self.role = role
         self.logs = [] 
 
     def log(self, message):
@@ -88,8 +88,8 @@ class Character:
                f"Stamina: {self.current_stamina}/{self.stamina}, Crit: {self.crit}%, Dodge: {self.dodge}%"
 
 class Witch(Character):
-    def __init__(self, name, species, atk, stamina, hp, crit, dodge):
-        super().__init__(name, species, atk, stamina, hp, crit, dodge)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.so_lan_thoi_khong = 0
         self.dark_ritual_used = False
         self.turn_count = 0
@@ -302,8 +302,8 @@ class Witch(Character):
                 st.error(f"⚑ {self.name} đã **đầu hàng**!")
 
 class Vampire(Character):
-    def __init__(self, name, species, atk, stamina, hp, crit, dodge):
-        super().__init__(name, species, atk, stamina, hp, crit, dodge)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.khat_mau = False
         self.huyet_cau = 0
         self.rebirth_uses = 0
@@ -526,8 +526,8 @@ class Vampire(Character):
                 self.tai_sinh()
 
 class Werewolf(Character):
-    def __init__(self, name, species, atk, stamina, hp, crit, dodge):
-        super().__init__(name, species, atk, stamina, hp, crit, dodge)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.is_wolf_form = False
         self.skill_1_usage_count = 0
         self.buff_stacking = 0
