@@ -20,7 +20,8 @@ def create_character_from_dict(info):
         info["stamina"],
         combat_stats["hp"],
         combat_stats["crit"],
-        combat_stats["dodge"]
+        combat_stats["dodge"],
+        role=info.get("role", "Không rõ")
     )
 
 class Character:
