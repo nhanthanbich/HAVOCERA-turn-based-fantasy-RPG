@@ -94,7 +94,7 @@ class Witch(Character):
         self.so_lan_thoi_khong = 0
         self.dark_ritual_used = False
         self.turn_count = 0
-        self.max_stamina = stamina
+        self.max_stamina = self.stamina
         self.next_attack_buffed = False
 
     def attack(self, target):
