@@ -4,15 +4,15 @@ from stats import species_base_stats, rand_stat
 from models import Witch, Vampire, Werewolf, get_class_by_species, create_character_from_dict
 
 st.markdown("""
-    <h1 style='font-size: 42px; font-weight: normal;'>
-        🌀 
-        <span style='color:#8B0000; font-weight:bold: 0 0 6px #5c0000;'>
-            Havoc
-        </span>
-        <span style='color:#800080; font-weight:bold: 0 0 6px #4b0082;'>
-            era
-        </span>: The rising of havoc ⚔️
-    </h1>
+<h1 style='font-size: 42px; font-weight: normal;'>
+🌀 <span style="
+    background: linear-gradient(90deg, #8B0000, #800080);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: bold;">
+    Havocera
+</span>: The rising of havoc ⚔️
+</h1>
 """, unsafe_allow_html=True)
 
 create_table()
