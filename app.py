@@ -5,7 +5,9 @@ from models import Witch, Vampire, Werewolf, get_class_by_species, create_charac
 
 st.set_page_config(page_title="Havocera", layout="wide")
 st.markdown("""
-    <h1 style='font-size: 40px;'>🌀 <b>Havoc</b>era: The rising of havoc ⚔️</h1>
+    <h1 style='font-size: 42px;'>
+        🌀 <b style='color:#d10000;'>Havocera</b>: The rising of havoc ⚔️
+    </h1>
 """, unsafe_allow_html=True)
 
 create_table()
