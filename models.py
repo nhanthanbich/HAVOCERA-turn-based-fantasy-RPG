@@ -1,6 +1,7 @@
 import random as rd
 import streamlit as st
 from stats import compute_combat_stats
+import math
 
 def get_class_by_species(species):
     class_map = {
