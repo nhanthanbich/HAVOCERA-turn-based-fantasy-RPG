@@ -225,83 +225,109 @@ class Witch(Character):
     def choose_skill(self, enemy, auto=False):
         self.start_turn()
     
+        # ⚠️ Nếu không có stamina tối đa – vô dụng
         if self.max_stamina == 0:
-            if auto:
-                st.markdown(f"🤖 {self.name} không còn phép – **AI đánh thường.**")
-            else:
-                st.markdown(f"{self.name} không còn phép thuật – chỉ có thể đánh thường!")
+            msg = f"🤖 {self.name} không còn phép – **AI đánh thường.**" if auto else f"{self.name} không còn phép thuật – chỉ có thể đánh thường!"
+            st.markdown(msg)
             self.attack(enemy)
             return
     
+        # === AI Mode ===
         if auto:
-            st.markdown(f"🤖 **{self.name} (AI – Witch) đang chọn kỹ năng...**")
-    
-            # 🔮 Dự đoán tình huống nguy hiểm
-            potential_danger = enemy.atk * 1.5
-            if self.hp > 250 and (self.hp - potential_danger) <= 250 and self.current_stamina < 49 and self.so_lan_thoi_khong < 3:
-                st.markdown(f"⚠️ **{self.name} dự đoán nguy hiểm – nghỉ ngơi để hồi stamina chuẩn bị dùng Thời Không.**")
-                self.rest()
-                return
-    
-            if self.hp <= 250 and self.current_stamina >= 49 and self.so_lan_thoi_khong < 3:
-                self.thoi_khong()
-                return
-    
-            if enemy.hp <= 200:
-                self.attack(enemy)
-                return
-    
-            if not self.dark_ritual_used and self.hp <= 250 and self.so_lan_thoi_khong >= 3:
-                self.nghi_le_hac_am()
-                return
-    
-            if self.so_lan_thoi_khong == 0 and self.current_stamina >= 4:
-                self.nguyen_rua(enemy)
-                return
-    
-            if self.so_lan_thoi_khong >= 1 and self.current_stamina >= 12:
-                self.doc_duoc(enemy)
-                return
-    
-            if self.so_lan_thoi_khong < 3 and self.current_stamina >= 49 and self.hp < self.max_hp * 0.4:
-                self.thoi_khong()
-                return
-    
-            self.attack(enemy)
+            self.ai_choose_skill(enemy)
             return
     
-        # 🎮 Chế độ người chơi – dùng giao diện Streamlit
-        st.markdown(f"🧙 **{self.name} (Witch)** chọn kỹ năng:")
-        options = ["👊 Đánh thường"]
+        # === GIAO DIỆN NGƯỜI CHƠI ===
+        st.markdown(f"🧙 **{self.name} (Phù Thủy)** – chọn kỹ năng:")
     
+        skill_map = {
+            "👊 Đánh thường": lambda: self.attack(enemy),
+            "🕯️ Nguyền Rủa (4 ⚡)": lambda: self.nguyen_rua(enemy),
+            "☠️ Độc Dược (12 ⚡)": lambda: self.doc_duoc(enemy),
+            "⏳ Thời Không (49 ⚡)": lambda: self.thoi_khong(),
+            "🩸 Nghi Lễ Hắc Ám": lambda: self.try_nghi_le(enemy),
+            "⚑ Đầu hàng": lambda: self.surrender(),
+        }
+    
+        # Tạo danh sách lựa chọn hợp lý
+        options = ["👊 Đánh thường"]
         if self.max_stamina > 0:
-            options.append("🕯️ Nguyền Rủa (4 Stamina)")
-            options.append("☠️ Độc Dược (12 Stamina)")
-            if self.so_lan_thoi_khong < 3:
-                options.append("⏳ Thời Không (49 Stamina)")
+            if self.current_stamina >= 4:
+                options.append("🕯️ Nguyền Rủa (4 ⚡)")
+            if self.current_stamina >= 12 and self.so_lan_thoi_khong >= 1:
+                options.append("☠️ Độc Dược (12 ⚡)")
+            if self.current_stamina >= 49 and self.so_lan_thoi_khong < 3:
+                options.append("⏳ Thời Không (49 ⚡)")
             if not self.dark_ritual_used:
                 options.append("🩸 Nghi Lễ Hắc Ám")
         options.append("⚑ Đầu hàng")
     
-        choice = st.radio("➤ Hành động:", options)
+        choice = st.radio("🧪 Lựa chọn hành động:", options)
     
-        if st.button("Thi triển"):
-            if choice.startswith("👊"):
-                self.attack(enemy)
-            elif choice.startswith("🕯️"):
-                self.nguyen_rua(enemy)
-            elif choice.startswith("☠️"):
-                self.doc_duoc(enemy)
-            elif choice.startswith("⏳"):
-                self.thoi_khong()
-            elif choice.startswith("🩸"):
-                pre_hp = self.hp
-                success = self.nghi_le_hac_am()
-                if not success or self.hp == pre_hp:
-                    st.warning("❌ Nghi lễ bị hủy hoặc thất bại. Vui lòng chọn lại kỹ năng.")
-            elif choice.startswith("⚑"):
-                self.hp = 0
-                st.error(f"⚑ {self.name} đã **đầu hàng**!")
+        if st.button("🎯 Thi triển kỹ năng"):
+            skill_map[choice]() if choice in skill_map else st.warning("❌ Kỹ năng không tồn tại!")
+    
+    def ai_choose_skill(self, enemy):
+        st.markdown(f"🤖 **{self.name} (AI – Witch)** đang cân não... 🧠")
+    
+        potential_danger = enemy.atk * 1.5
+    
+        # ⚠️ Dự đoán nguy hiểm – nghỉ để chuẩn bị thời không
+        if self.hp > 250 and (self.hp - potential_danger) <= 250 and self.current_stamina < 49 and self.so_lan_thoi_khong < 3:
+            st.markdown("⚠️ **Dự đoán nguy hiểm – nghỉ để hồi stamina chuẩn bị Thời Không.**")
+            self.rest()
+            return
+    
+        # ⏳ Kích hoạt Thời Không khi HP thấp
+        if self.hp <= 250 and self.current_stamina >= 49 and self.so_lan_thoi_khong < 3:
+            st.markdown("⏳ **HP thấp – dùng Thời Không để lật ngược thế cờ.**")
+            self.thoi_khong()
+            return
+    
+        # 👊 Kết liễu nếu địch yếu
+        if enemy.hp <= 200:
+            st.markdown("💥 **Địch yếu – kết liễu bằng đòn thường.**")
+            self.attack(enemy)
+            return
+    
+        # 🩸 Dùng Nghi Lễ nếu đã xài hết Thời Không
+        if not self.dark_ritual_used and self.hp <= 250 and self.so_lan_thoi_khong >= 3:
+            st.markdown("🩸 **HP thấp + hết Thời Không – hy sinh để tăng sức mạnh.**")
+            self.nghi_le_hac_am()
+            return
+    
+        # 🕯️ Ưu tiên Nguyền Rủa nếu chưa từng dùng Thời Không
+        if self.so_lan_thoi_khong == 0 and self.current_stamina >= 4:
+            st.markdown("🕯️ **Chưa Thời Không – dùng Nguyền Rủa để rút máu địch.**")
+            self.nguyen_rua(enemy)
+            return
+    
+        # ☠️ Có stack – dùng Độc Dược
+        if self.so_lan_thoi_khong >= 1 and self.current_stamina >= 12:
+            st.markdown("☠️ **Đủ điều kiện – thi triển Độc Dược.**")
+            self.doc_duoc(enemy)
+            return
+    
+        # ⏳ Dùng Thời Không nếu đủ điều kiện
+        if self.so_lan_thoi_khong < 3 and self.current_stamina >= 49 and self.hp < self.max_hp * 0.4:
+            st.markdown("⏳ **HP < 40% – dùng Thời Không tiếp.**")
+            self.thoi_khong()
+            return
+    
+        # 👊 Không còn lựa chọn – đánh thường
+        st.markdown("👊 **Không còn phép – đánh thường.**")
+        self.attack(enemy)
+    
+    # ===== Phụ trợ =====
+    def try_nghi_le(self, enemy):
+        pre_hp = self.hp
+        success = self.nghi_le_hac_am()
+        if not success or self.hp == pre_hp:
+            st.warning("❌ Nghi lễ thất bại hoặc bị hủy. Hãy chọn kỹ năng khác.")
+    
+    def surrender(self):
+        self.hp = 0
+        st.error(f"🏳️ **{self.name} đã đầu hàng!**")
 
 class Vampire(Character):
     def __init__(self, *args, **kwargs):
@@ -441,91 +467,91 @@ class Vampire(Character):
 
     def choose_skill(self, enemy, auto=False):
         if auto:
-            st.markdown(f"🤖 **{self.name}** (AI – Vampire) đang phân tích tình hình...")
-    
-            danger_threshold = self.max_hp * 0.2
-            potential_danger = enemy.atk * 1.4 + 10
-    
-            # 1. Nếu còn Huyết Cầu → ném luôn
-            if self.huyet_cau > 0:
-                st.markdown("🔴 **Còn Huyết Cầu – ưu tiên ném ngay!**")
-                self.huyet_bao(enemy, auto=True)
-                return
-    
-            # 2. Nếu gần nguy hiểm, nhưng chưa đủ điều kiện Tái Sinh → nghỉ
-            if (
-                self.hp > danger_threshold and
-                (self.hp - potential_danger) <= danger_threshold and
-                self.rebirth_uses < 3 and
-                self.current_stamina < 21 and
-                not self.khat_mau
-            ):
-                st.markdown("⚠️ **Dự đoán nguy hiểm – nghỉ để chuẩn bị Tái Sinh hoặc Khát Máu**")
-                self.rest()
-                return
-    
-            # 3. Tái Sinh khi sắp chết hoặc đã Khát Máu
-            if self.hp < danger_threshold and self.rebirth_uses < 3 and self.current_stamina >= 21:
-                if self.khat_mau or (self.hp - potential_danger <= 0):
-                    st.markdown("💀 **Kích hoạt Tái Sinh!**")
-                    self.tai_sinh()
-                    return
-                else:
-                    st.markdown("🔄 **Chờ Khát Máu – chưa vội Tái Sinh.**")
-                    self.rest()
-                    return
-    
-            # 4. Nếu đủ điều kiện an toàn và tránh né địch không cao → dùng Huyết Bạo
-            if self.current_stamina >= 11:
-                max_te = math.ceil(self.max_hp * 0.07)
-                enemy_dodge_risk = enemy.dodge > 35
-                vampire_safe = self.hp >= max_te + 10 and self.hp >= self.max_hp * 0.4
-    
-                if vampire_safe and not enemy_dodge_risk:
-                    st.markdown("🩸 **Thời cơ hoàn hảo – thi triển Huyết Bạo!**")
-                    self.huyet_bao(enemy, auto=True)
-                    return
-                else:
-                    st.markdown("⏳ **Chưa nên dùng Huyết Bạo – quá rủi ro hoặc máu thấp.**")
-    
-            # 5. Máu thấp → ưu tiên Hấp Huyết
-            if self.hp < self.max_hp * 0.3 and self.current_stamina >= 2:
-                self.hap_huyet(enemy)
-                return
-    
-            # 6. Có stamina → dùng Hấp Huyết
-            if self.current_stamina >= 2:
-                self.hap_huyet(enemy)
-                return
-    
-            # 7. Không còn stamina → đánh thường
-            self.attack(enemy)
+            self.ai_choose_skill(enemy)
             return
     
         # === Giao diện người chơi ===
         st.markdown(f"## 🧛 **{self.name} (Ma Cà Rồng)** – chọn kỹ năng")
-        st.markdown(f"❤️ HP: `{self.hp}/{self.max_hp}` | ⚡ Stamina: `{self.current_stamina}/{self.stamina}` | 🔺 ATK: `{self.atk}` | 🎯 Crit: `{self.crit}%`")
+        st.markdown(
+            f"❤️ HP: `{self.hp}/{self.max_hp}` | ⚡ Stamina: `{self.current_stamina}/{self.stamina}` | 🔺 ATK: `{self.atk}` | 🎯 Crit: `{self.crit}%`"
+        )
     
-        skill = st.radio("🎯 Chọn hành động", [
-            "👊 Đánh thường",
-            "🩸 Hấp Huyết (2 ⚡)",
-            "🔥 Huyết Bạo (Hiến tế máu + ném Huyết Cầu – 11 ⚡)",
-            "♻️ Tái Sinh (21 ⚡ – hồi HP ngẫu nhiên)",
-            "⚑ Đầu hàng"
-        ])
+        skill_map = {
+            "👊 Đánh thường": lambda: self.attack(enemy),
+            "🩸 Hấp Huyết (2 ⚡)": lambda: self.hap_huyet(enemy),
+            "🔥 Huyết Bạo (Hiến tế + 11 ⚡)": lambda: self.huyet_bao(enemy),
+            "♻️ Tái Sinh (21 ⚡)": lambda: self.tai_sinh(),
+            "⚑ Đầu hàng": lambda: self.surrender()
+        }
     
+        choice = st.radio("🩸 **Chọn hành động**", list(skill_map.keys()))
         if st.button("🕹️ Thi triển kỹ năng"):
-            if skill == "⚑ Đầu hàng":
-                self.hp = 0
-                st.markdown(f"🏳️ **{self.name} đã đầu hàng!**")
-            elif skill.startswith("👊"):
-                self.attack(enemy)
-            elif skill.startswith("🩸"):
-                self.hap_huyet(enemy)
-            elif skill.startswith("🔥"):
-                self.huyet_bao(enemy)
-            elif skill.startswith("♻️"):
+            skill_map[choice]()
+    
+    def ai_choose_skill(self, enemy):
+        st.markdown(f"🤖 **{self.name}** (AI – Vampire) đang phân tích tình hình...")
+    
+        danger_threshold = self.max_hp * 0.2
+        potential_danger = enemy.atk * 1.4 + 10
+    
+        # 1. 🔴 Còn Huyết Cầu → ưu tiên ném
+        if self.huyet_cau > 0:
+            st.markdown("🔴 **Còn Huyết Cầu – ném ngay!**")
+            self.huyet_bao(enemy, auto=True)
+            return
+    
+        # 2. ⚠️ Dự đoán nguy hiểm → nghỉ
+        if (
+            self.hp > danger_threshold and
+            (self.hp - potential_danger) <= danger_threshold and
+            self.rebirth_uses < 3 and
+            self.current_stamina < 21 and
+            not self.khat_mau
+        ):
+            st.markdown("⚠️ **Dự đoán nguy hiểm – nghỉ để chuẩn bị Tái Sinh hoặc Khát Máu**")
+            self.rest()
+            return
+    
+        # 3. 💀 HP thấp – cân nhắc Tái Sinh
+        if self.hp < danger_threshold and self.rebirth_uses < 3 and self.current_stamina >= 21:
+            if self.khat_mau or (self.hp - potential_danger <= 0):
+                st.markdown("💀 **Kích hoạt Tái Sinh!**")
                 self.tai_sinh()
+                return
+            else:
+                st.markdown("🔄 **Chờ Khát Máu – chưa vội Tái Sinh.**")
+                self.rest()
+                return
+    
+        # 4. 🩸 Nếu đủ điều kiện an toàn → dùng Huyết Bạo
+        if self.current_stamina >= 11:
+            max_te = math.ceil(self.max_hp * 0.07)
+            enemy_dodge_risk = enemy.dodge > 35
+            vampire_safe = self.hp >= max_te + 10 and self.hp >= self.max_hp * 0.4
+    
+            if vampire_safe and not enemy_dodge_risk:
+                st.markdown("🩸 **Thời cơ hoàn hảo – thi triển Huyết Bạo!**")
+                self.huyet_bao(enemy, auto=True)
+                return
+            else:
+                st.markdown("⏳ **Huyết Bạo rủi ro – chờ thời.**")
+    
+        # 5. 🩸 Hấp Huyết nếu máu thấp
+        if self.hp < self.max_hp * 0.3 and self.current_stamina >= 2:
+            self.hap_huyet(enemy)
+            return
+    
+        # 6. 🩸 Có stamina – vẫn dùng Hấp Huyết
+        if self.current_stamina >= 2:
+            self.hap_huyet(enemy)
+            return
+    
+        # 7. 👊 Hết stamina – đánh thường
+        self.attack(enemy)
+    
+    def surrender(self):
+        self.hp = 0
+        st.error(f"🏳️ **{self.name} đã đầu hàng!**")
 
 class Werewolf(Character):
     def __init__(self, *args, **kwargs):
@@ -707,125 +733,85 @@ class Werewolf(Character):
     
     def choose_skill(self, enemy, auto=False):
         self.start_turn()
-        if not auto:
-            # Nếu là người chơi, gọi theo dạng input truyền thống
-            st.markdown(f"\n🐺 **{self.name}** (Ma sói) – Hiện đang ở dạng {'🧍 Người' if not self.is_wolf_form else '🐺 Sói'}, lựa chọn kỹ năng:")
-            st.markdown("1. 👊 Đánh Thường (Tấn công cơ bản, không tiêu tốn năng lượng) (0 ⚡)")
-            
-            if self.is_wolf_form:
-                st.markdown("2. 🔥 Cuồng Nộ (Tăng ATK và tỉ lệ chí mạng trong vài lượt) (5 ⚡)")
-                st.markdown("3. 🩸 Tất Sát (Tung liên hoàn đòn, mỗi đòn tốn 3 ⚡)")
-                st.markdown("4. 🔁 Biến Hình (Chuyển về dạng người, giảm HP và ATK) (0 ⚡)")
-            else:
-                st.markdown("2. 🌫️ Ẩn Thân (Tăng HP và né tránh) (0 ⚡)")
-                st.markdown("3. 💨 Vận Công (Hồi HP và Stamina) (0 ⚡)")
-                st.markdown("4. 🐺 Biến Hình (Tăng HP tối đa và ATK) (10 ⚡)")
-            
-            st.markdown("0. ⚐ Đầu hàng")
+        if auto:
+            self.ai_choose_skill(enemy)
+        else:
+            self.player_choose_skill(enemy)
     
-            choice = st.text_input("➤ Chọn kỹ năng: ").strip()
-            if choice == "0":
-                self.hp = 0
-                st.markdown(f"**{self.name}** đã đầu hàng!")
-                return
-            if choice == "1":
-                self.attack(enemy)
-            elif choice == "2":
-                self.skill_1()
-            elif choice == "3":
-                result = self.skill_2(enemy)
-                if self.is_wolf_form and result:
-                    enemy.take_damage(result, self)
-            elif choice == "4":
-                turn_over = self.skill_3()
-                if not turn_over:
-                    self.choose_skill(enemy, auto=False)  # gọi lại nếu còn lượt
-            else:
-                st.markdown("Lựa chọn không hợp lệ. Tự động đánh thường.")
-                self.attack(enemy)
-            return
+    def ai_choose_skill(self, enemy):
+        st.markdown(f"🤖 **{self.name}** (AI Ma Sói) đang suy tính chiến thuật...")
     
-        # === AI CHO BOT ===
-        st.markdown(f"\n🤖 **{self.name}** (AI Ma Sói) đang suy tính chiến thuật...")
-    
-        # Phân tích tình huống
+        # ====== AI Logic ======
         enemy_is_weak = enemy.max_hp < 1000
         enemy_is_dying = enemy.hp < 400
         self_is_dying = self.hp < self.max_hp * 0.33
         self_is_critical = self.hp < 300
         crit_ready = self.crit >= 55 or self.buff_stacking >= 2
         can_fury_strike = self.current_stamina >= 12
-        fury_combo_ready = self.current_stamina >= 24
         stamina_safe = self.current_stamina >= 29
         hp_loss_when_revert = int(self.max_hp * 0.33)
         revert_would_kill = self.hp <= hp_loss_when_revert
     
-        # === TÌNH HUỐNG SINH TỬ – ĐẶT CƯỢC SỐNG CÒN ===
+        # === 1. Nguy hiểm cực độ
         if self_is_critical:
-            # Nếu có thể tất sát và có khả năng kết liễu
             if self.is_wolf_form and crit_ready and can_fury_strike and enemy.hp < 500:
-                st.markdown("☠️ Nguy kịch! Liều mạng tung tất sát để hạ địch.")
-                dmg = self.skill_2(enemy)
+                st.markdown("☠️ Nguy kịch! Liều mạng tung tất sát.")
+                dmg = self.fury_strike(enemy)
                 if dmg:
                     enemy.take_damage(dmg, self)
                 return
-    
-            # Nếu không thể kết liễu mà biết sẽ chết ⇒ tìm đường sống bằng ẩn thân
             if not self.is_wolf_form:
-                st.markdown("🌫️ HP quá thấp, cầu may bằng Ẩn Thân.")
+                st.markdown("🌫️ HP thấp – dùng Ẩn Thân.")
                 self.skill_1()
-                return
             else:
-                st.markdown("🧍 HP cực thấp, về dạng người dù còn 1 HP để tìm cơ hội sống.")
-                self.skill_3()  # về người
-                self.skill_1()  # dùng Ẩn Thân luôn
-                return
+                st.markdown("🧍 HP thấp – về dạng người + ẩn thân.")
+                self.skill_3()
+                self.skill_1()
+            return
     
-        # === GẶP ĐỊCH YẾU, ƯU TIÊN ÉP NHANH ===
+        # === 2. Gặp địch yếu
         if enemy_is_weak:
             if not self.is_wolf_form:
                 if self.current_stamina >= 10:
-                    st.markdown("🐺 Gặp địch yếu, ưu tiên hóa sói.")
-                    still_can_act = self.skill_3()
-                    if still_can_act is False:
-                        self.choose_skill(enemy, auto=True)
+                    st.markdown("🐺 Gặp địch yếu – biến hình tấn công.")
+                    turn_over = self.skill_3()
+                    if turn_over is False:
+                        self.ai_choose_skill(enemy)
                     return
                 else:
-                    st.markdown("💨 Chưa hóa sói được, vận công.")
-                    self.skill_2(enemy)
+                    st.markdown("💨 Thiếu stamina – vận công hồi phục.")
+                    self.meditate()
                     return
             else:
                 if can_fury_strike:
-                    st.markdown("🩸 Địch yếu, tất sát ngay.")
-                    dmg = self.skill_2(enemy)
+                    st.markdown("🩸 Tất sát ngay vì địch yếu!")
+                    dmg = self.fury_strike(enemy)
                     if dmg:
                         enemy.take_damage(dmg, self)
                     return
-                elif self.current_stamina < 10:
+                else:
                     if revert_would_kill:
-                        st.markdown("🌫️ Không thể về người vì sẽ chết. Ưu tiên ẩn thân.")
+                        st.markdown("🌫️ Không thể về người – dùng Cuồng Nộ.")
                         self.skill_1()
-                        return
-                    st.markdown("🧍 Không còn sức, về dạng người hồi phục.")
-                    self.skill_3()
-                    self.skill_2(enemy)
+                    else:
+                        st.markdown("🧍 Thiếu lực – về người và vận công.")
+                        self.skill_3()
+                        self.meditate()
                     return
     
-        # === ĐANG Ở DẠNG SÓI ===
+        # === 3. Ở dạng sói
         if self.is_wolf_form:
             if self.current_stamina < 10:
                 if revert_would_kill:
-                    st.markdown("🌫️ Không thể về người vì sẽ chết. Ưu tiên ẩn thân.")
                     self.skill_1()
-                    return
-                st.markdown("🧍 Stamina thấp, về dạng người để hồi.")
-                self.skill_3()
-                self.skill_2(enemy)
+                else:
+                    self.skill_3()
+                    self.meditate()
                 return
     
             if crit_ready and can_fury_strike and enemy_is_dying:
-                st.markdown("🔥 Dứt điểm bằng tất sát!")
-                dmg = self.skill_2(enemy)
+                st.markdown("🔥 Kết liễu bằng tất sát.")
+                dmg = self.fury_strike(enemy)
                 if dmg:
                     enemy.take_damage(dmg, self)
                 return
@@ -837,39 +823,65 @@ class Werewolf(Character):
     
             if can_fury_strike:
                 st.markdown("🩸 Tất sát vì đủ điều kiện.")
-                dmg = self.skill_2(enemy)
+                dmg = self.fury_strike(enemy)
                 if dmg:
                     enemy.take_damage(dmg, self)
                 return
     
-            st.markdown("👊 Không có lựa chọn tối ưu, đánh thường.")
+            st.markdown("👊 Không còn lựa chọn – đánh thường.")
             self.attack(enemy)
             return
     
-        # === ĐANG Ở DẠNG NGƯỜI ===
+        # === 4. Ở dạng người
         if self_is_dying:
             if self.current_stamina < 10 or self.hp < self.max_hp * 0.25:
-                st.markdown("🌫️ Nguy hiểm! Ưu tiên ẩn thân để sống sót.")
+                st.markdown("🌫️ Nguy hiểm – ưu tiên Ẩn Thân.")
                 self.skill_1()
                 return
-            elif self.current_stamina >= 10:
-                st.markdown("🐺 Đủ năng lượng, hóa sói để lật kèo.")
+            else:
+                st.markdown("🐺 Đủ năng lượng – hóa sói phản công.")
                 turn_over = self.skill_3()
                 if turn_over is False:
-                    self.choose_skill(enemy, auto=True)
+                    self.ai_choose_skill(enemy)
                 return
     
+        # === 5. Bình thường dạng người
         if self.current_stamina < 10:
-            st.markdown("💨 Thiếu stamina, vận công.")
-            self.skill_2(enemy)
-            return
-    
-        if self.current_stamina >= 10:
-            st.markdown("🐺 Hóa sói để tấn công.")
+            st.markdown("💨 Hồi stamina – vận công.")
+            self.meditate()
+        else:
+            st.markdown("🐺 Đủ lực – hóa sói.")
             turn_over = self.skill_3()
             if turn_over is False:
-                self.choose_skill(enemy, auto=True)
-            return
+                self.ai_choose_skill(enemy)
     
-        st.markdown("💨 Không còn lựa chọn nào, vận công hồi phục.")
-        self.skill_2(enemy)
+    def player_choose_skill(self, enemy):
+        st.markdown(f"🐺 **{self.name}** (Ma sói – {'🧍 Người' if not self.is_wolf_form else '🐺 Sói'}) – chọn kỹ năng")
+    
+        skill_map = {
+            "👊 Đánh Thường (0 ⚡)": lambda: self.attack(enemy),
+            "⚐ Đầu hàng": lambda: self.surrender()
+        }
+    
+        if self.is_wolf_form:
+            skill_map.update({
+                "🔥 Cuồng Nộ (5 ⚡)": lambda: self.skill_1(),
+                "🩸 Tất Sát (3 ⚡ x nhiều)": lambda: self.fury_strike(enemy),
+                "🔁 Biến Hình – Về Người": lambda: self.skill_3()
+            })
+        else:
+            skill_map.update({
+                "🌫️ Ẩn Thân": lambda: self.skill_1(),
+                "💨 Vận Công": lambda: self.meditate(),
+                "🐺 Biến Hình – Hóa Sói (10 ⚡)": lambda: self.skill_3()
+            })
+    
+        choice = st.radio("➤ Hành động:", list(skill_map.keys()))
+        if st.button("🎯 Thi triển"):
+            result = skill_map[choice]()
+            if isinstance(result, bool) and not result:
+                self.choose_skill(enemy, auto=False)
+    
+    def surrender(self):
+        self.hp = 0
+        st.error(f"⚑ {self.name} đã **đầu hàng**!")
