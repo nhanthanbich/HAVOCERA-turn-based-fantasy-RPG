@@ -306,21 +306,6 @@ if tab5:
         st.markdown(f"## 🔥 Vòng {round_idx} – {atk.name} hành động!")
 
         # ===== THÔNG TIN NHÂN VẬT =====
-        def show_info(p):
-            try:
-                st.subheader(f"🧍 {p.name} ({p.species})")
-                st.markdown(f"""
-                - 🎭 Vai trò: **{p.role}**  
-                - 🗡️ Sức mạnh: **{p.atk}**  
-                - 🔋 Mana: **{p.current_stamina}/{p.stamina}**  
-                - ❤️ Máu: **{p.hp}/{p.max_hp}**  
-                - 🎯 Crit: **{p.crit}%**  
-                - 🌀 Né đòn: **{p.dodge}%**
-                """)
-            except Exception as e:
-                st.error(f"💥 Không thể hiển thị thông tin nhân vật: {e}")
-                st.stop()
-
         try:
             col1, col2 = st.columns(2)
             with col1:
