@@ -87,15 +87,21 @@ with tab3:
     if species_filter != "Tất cả":
         df = df[df["species"] == species_filter]
 
-    # Lọc theo tên + Nút kính lúp
+    # Khởi tạo trạng thái tìm kiếm nếu chưa có
+    if "name_search" not in st.session_state:
+        st.session_state.name_search = ""
+
+    # Giao diện tìm kiếm + nút bấm 🔍
     col1, col2 = st.columns([10, 1])
     with col1:
-        name_query = st.text_input("🔎 Tìm theo tên nhân vật", label_visibility="collapsed", placeholder="Nhập tên...")
+        name_input = st.text_input("🔎 Tìm theo tên nhân vật", value=st.session_state.name_search, label_visibility="collapsed", placeholder="Nhập tên...")
     with col2:
-        st.markdown("### 🔍")  # biểu tượng giả lập nút tìm (không có chức năng bấm)
+        if st.button("🔍", help="Bấm để lọc theo tên"):
+            st.session_state.name_search = name_input
 
-    if name_query:
-        df = df[df["name"].str.lower().str.contains(name_query.lower())]
+    # Lọc theo tên nếu có
+    if st.session_state.name_search:
+        df = df[df["name"].str.lower().str.contains(st.session_state.name_search.lower())]
 
     # Biểu tượng & màu theo loài
     def get_species_icon(species):
@@ -134,6 +140,7 @@ with tab3:
         st.dataframe(styled_df, use_container_width=True)
     else:
         st.info("⚠️ Không có nhân vật nào phù hợp với bộ lọc.")
+
 # ===== TAB 4: Bắt đầu =====
 with tab4:
     st.header("🚀 Chuẩn bị Trận Đấu")
