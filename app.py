@@ -77,28 +77,48 @@ with tab2:
 with tab3:
     st.subheader("📋 Danh sách nhân vật")
 
+    # Lấy toàn bộ dữ liệu
     df = get_all_characters()
+
+    # Bảng lọc loài
     species_list = list(species_base_stats.keys())
     species_filter = st.selectbox("🔍 Lọc theo loài", ["Tất cả"] + species_list)
 
     if species_filter != "Tất cả":
         df = df[df["species"] == species_filter]
 
+    # Ô tìm kiếm theo tên
+    name_query = st.text_input("🔎 Tìm theo tên nhân vật")
+
+    if name_query:
+        df = df[df["name"].str.lower().str.contains(name_query.lower())]
+
     # Biểu tượng & màu theo loài
     def get_species_icon(species):
         return {
             "Witch": "🧙‍♀️",
             "Vampire": "🧛",
-            "Werewolf": "🐺"
+            "Werewolf": "🐺",
+            "Skeleton": "💀",
+            "Demon": "😈",
+            "Scarecrow": "🎃",
+            "Butcher": "🔪",
+            "Yeti": "🧊",
         }.get(species, "❓")
 
     def style_row_by_species(species):
         return f"background-color: { {
             'Witch': '#fef9e7',
             'Vampire': '#fdecea',
-            'Werewolf': '#eafaf1'
-        }.get(species, '#fff') }"
+            'Werewolf': '#eafaf1',
+            'Skeleton': '#f0f0f0',
+            'Demon': '#fce4ec',
+            'Scarecrow': '#f3e5f5',
+            'Butcher': '#fbe9e7',
+            'Yeti': '#e0f7fa',
+        }.get(species, '#ffffff') }"
 
+    # Hiển thị bảng kết quả
     if not df.empty:
         df["🧬 Species"] = df["species"].apply(lambda s: f"{get_species_icon(s)} {s}")
         df_view = df[["id", "name", "🧬 Species", "role", "strength", "stamina", "vitality", "dexterity", "agility"]]
@@ -109,7 +129,7 @@ with tab3:
         )
         st.dataframe(styled_df, use_container_width=True)
     else:
-        st.info("⚠️ Không có nhân vật nào phù hợp.")
+        st.info("⚠️ Không có nhân vật nào phù hợp với bộ lọc.")
 
 # ===== TAB 4: Bắt đầu =====
 with tab4:
@@ -131,7 +151,7 @@ with tab4:
         "Werewolf": "🐺",
         "Skeleton": "💀",
         "Demon": "😈",
-        "Scarecrow": "🎃",  # tránh 🪆 vì lỗi font
+        "Scarecrow": "🎃",
         "Butcher": "🔪",
         "Yeti": "🧊",
     }
@@ -145,34 +165,38 @@ with tab4:
 
     # === Người chơi 1 ===
     with col1:
-        species1 = st.selectbox("🔮 Chọn loài", list(species_base_stats.keys()), key="sp1-select")
-        icon1 = species_icon_map.get(species1, "❓")
-        st.markdown(f"### {icon1} Người chơi 1")
+        species_options = ["--- Chọn loài ---"] + list(species_base_stats.keys())
+        species1 = st.selectbox("🔮 Chọn loài", species_options, key="sp1-select")
 
-        df1 = get_all_characters()
-        df1 = df1[df1["species"] == species1]
-
-        if not df1.empty:
-            name1 = st.selectbox("🧬 Nhân vật", df1["name"].tolist(), key="char1-select")
+        if species1 != "--- Chọn loài ---":
+            icon1 = species_icon_map.get(species1, "❓")
+            st.markdown(f"### {icon1} Người chơi 1")
+            df1 = get_all_characters()
+            df1 = df1[df1["species"] == species1]
+            name_options1 = ["--- Chọn nhân vật ---"] + df1["name"].tolist()
+            name1 = st.selectbox("🧬 Nhân vật", name_options1, key="char1-select")
+            if name1 == "--- Chọn nhân vật ---":
+                name1 = None
         else:
             name1 = None
-            st.warning("⚠️ Không có nhân vật cho loài này.")
 
     # === Người chơi 2 hoặc Bot ===
     with col2:
-        species2 = st.selectbox("🔮 Chọn loài", list(species_base_stats.keys()), key="sp2-select")
-        icon2 = species_icon_map.get(species2, "❓")
-        title2 = "🤖 Bot" if is_bot else f"{icon2} Người chơi 2"
-        st.markdown(f"### {title2}")
+        species_options2 = ["--- Chọn loài ---"] + list(species_base_stats.keys())
+        species2 = st.selectbox("🔮 Chọn loài", species_options2, key="sp2-select")
 
-        df2 = get_all_characters()
-        df2 = df2[df2["species"] == species2]
-
-        if not df2.empty:
-            name2 = st.selectbox("🧬 Nhân vật", df2["name"].tolist(), key="char2-select")
+        if species2 != "--- Chọn loài ---":
+            icon2 = species_icon_map.get(species2, "❓")
+            title2 = "🤖 Bot" if is_bot else f"{icon2} Người chơi 2"
+            st.markdown(f"### {title2}")
+            df2 = get_all_characters()
+            df2 = df2[df2["species"] == species2]
+            name_options2 = ["--- Chọn nhân vật ---"] + df2["name"].tolist()
+            name2 = st.selectbox("🧬 Nhân vật", name_options2, key="char2-select")
+            if name2 == "--- Chọn nhân vật ---":
+                name2 = None
         else:
             name2 = None
-            st.warning("⚠️ Không có nhân vật cho loài này.")
 
     # ===== Bắt đầu trận đấu =====
     if name1 and name2 and not st.session_state.dice_rolled:
@@ -213,7 +237,7 @@ with tab4:
         st.success(f"🎯 {atk.name} đã được chọn đi trước!")
         st.info("👉 Chuyển sang tab ⚔️ Chiến Đấu để bắt đầu hành động.")
     else:
-        st.info("📌 Hãy chọn đủ 2 nhân vật rồi bắt đầu trận đấu.")
+        st.info("📌 Hãy chọn đủ loài và nhân vật để bắt đầu trận đấu.")
 
 # === BẮT ĐẦU TAB 5 ===
 if tab5:
