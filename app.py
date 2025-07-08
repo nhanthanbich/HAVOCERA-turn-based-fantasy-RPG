@@ -20,13 +20,19 @@ create_table()
 if "selected_character" not in st.session_state:
     st.session_state.selected_character = None
 
-tabs = ["📘 Hướng Dẫn", "🛠️ Quản Lý Nhân Vật", "🎯 Bắt Đầu"]
+# Định nghĩa các tab chính
+tabs = ["📘 Hướng Dẫn", "🛠️ Quản Lý Nhân Vật", "👥 Danh Sách Nhân Vật", "🎯 Bắt Đầu"]
+
+# Thêm Tab "Chiến Đấu" nếu có nhân vật được chọn
 if st.session_state.selected_character:
     tabs.append("⚔️ Chiến Đấu")
 
+# Tạo các đối tượng tab
 tab_objects = st.tabs(tabs)
-tab1, tab2, tab3 = tab_objects[:3]
-tab4 = tab_objects[3] if len(tab_objects) > 3 else None
+
+# Cập nhật các tab theo thứ tự mới
+tab1, tab2, tab3, tab4 = tab_objects[:4]
+tab5 = tab_objects[4] if len(tab_objects) > 4 else None
 
 # ===== TAB 1: Hướng dẫn =====
 with tab1:
@@ -60,6 +66,21 @@ with tab2:
             st.warning("⚠️ Nhập tên trước nghen!")
 
     st.divider()
+
+    st.subheader("🗑️ Xoá nhân vật")
+
+    df = get_all_characters()
+
+    if not df.empty and "id" in df.columns:
+        del_id = st.selectbox("Chọn ID để xoá", df["id"])
+        if st.button("🗑️ Xoá"):
+            delete_character(del_id)
+            st.success("🧹 Đã xoá thành công!")
+    else:
+        st.info("⛔ Không có nhân vật nào để xoá!")
+
+# ===== TAB 3: Danh Sách Nhân Vật =====
+with tab3:
     st.subheader("📋 Danh sách nhân vật")
 
     df = get_all_characters()
@@ -96,19 +117,8 @@ with tab2:
     else:
         st.info("⚠️ Không có nhân vật nào phù hợp.")
 
-    st.divider()
-    st.subheader("🗑️ Xoá nhân vật")
-
-    if not df.empty and "id" in df.columns:
-        del_id = st.selectbox("Chọn ID để xoá", df["id"])
-        if st.button("🗑️ Xoá"):
-            delete_character(del_id)
-            st.success("🧹 Đã xoá thành công!")
-    else:
-        st.info("⛔ Không có nhân vật nào để xoá!")
-
-# ===== TAB 3: Bắt đầu =====
-with tab3:
+# ===== TAB 4: Bắt đầu =====
+with tab4:
     st.header("🚀 Chuẩn bị Trận Đấu")
 
     # Init biến nếu chưa có
@@ -181,7 +191,7 @@ with tab3:
         st.session_state.turn = 1
         st.session_state.combat_logs = []
         st.session_state.battle_started = True
-        st.session_state.selected_character = True  # 👉 để mở tab 4
+        st.session_state.selected_character = True  # 👉 để mở tab 5
 
         st.success(f"🎯 {attacker.name} tung xúc xắc đi trước!")
         st.info("👉 Chuyển qua tab ⚔️ Chiến Đấu để bắt đầu hành động!")
@@ -189,8 +199,8 @@ with tab3:
         st.info("📌 Hãy chọn đủ 2 nhân vật để bắt đầu.")
 
 # === BẮT ĐẦU TAB 4 ===
-if tab4:
-    with tab4:
+if tab5:
+    with tab5:
         st.header("⚔️ Trận Chiến Bắt Đầu!")
 
         if not st.session_state.get("battle_started", False):
