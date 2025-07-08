@@ -288,71 +288,92 @@ if tab5:
 # ===== KHÔNG TAB! Reset DB Ẩn Ở Góc Khuất =====
 with st.sidebar.expander("🔐 Quản Trị Hệ Thống", expanded=False):
     st.markdown("### 🔐 Xác Thực Admin")
-    password = st.text_input("Nhập mật khẩu", type="password", label_visibility="collapsed")
 
-    if password == "duyanh":
-        st.success("✅ Đã xác thực quyền admin!")
+    # Biến xác thực admin dùng session_state
+    if "admin_authenticated" not in st.session_state:
+        st.session_state.admin_authenticated = False
 
-        # --- Xoá toàn bộ database ---
-        st.markdown("#### 💣 Reset toàn bộ dữ liệu")
-        if st.button("💥 Xoá tất cả nhân vật"):
+    if not st.session_state.admin_authenticated:
+        password = st.text_input("Nhập mật khẩu", type="password")
+        if st.button("🔓 Xác thực"):
+            if password == "duyanh":
+                st.session_state.admin_authenticated = True
+                st.success("✅ Đã xác thực quyền admin!")
+            else:
+                st.error("❌ Sai mật khẩu!")
+        st.stop()
+
+    # Nếu đã xác thực admin, hiển thị các tuỳ chọn
+    st.success("✅ Đang ở chế độ quản trị!")
+
+    # --- Xoá toàn bộ database ---
+    st.markdown("#### 💣 Reset toàn bộ dữ liệu")
+    if st.button("💥 Xoá tất cả nhân vật"):
+        conn = create_connection()
+        conn.execute("DELETE FROM characters")
+        conn.commit()
+        conn.close()
+        st.success("💣 Đã reset toàn bộ database!")
+
+    # --- Xoá toàn bộ nhân vật của một loài ---
+    st.markdown("#### 🧹 Xoá toàn bộ nhân vật theo loài")
+    species_list = list(species_base_stats.keys())
+    selected_species = st.selectbox("🧬 Chọn loài để xoá", ["--- Chọn loài ---"] + species_list)
+
+    if selected_species != "--- Chọn loài ---":
+        if st.button("🗑️ Xoá tất cả nhân vật thuộc loài này"):
             conn = create_connection()
-            conn.execute("DELETE FROM characters")
+            conn.execute("DELETE FROM characters WHERE species = ?", (selected_species,))
             conn.commit()
             conn.close()
-            st.success("💣 Đã reset toàn bộ database!")
+            st.success(f"🗑️ Đã xoá toàn bộ nhân vật của loài {selected_species}!")
 
-        # --- Xoá toàn bộ nhân vật của một loài ---
-        st.markdown("#### 🧹 Xoá toàn bộ nhân vật theo loài")
-        species_list = list(species_base_stats.keys())
-        selected_species = st.selectbox("🧬 Chọn loài để xoá", ["--- Chọn loài ---"] + species_list)
+    st.markdown("---")
 
-        if selected_species != "--- Chọn loài ---":
-            if st.button("🗑️ Xoá tất cả nhân vật thuộc loài này"):
-                conn = create_connection()
-                conn.execute("DELETE FROM characters WHERE species = ?", (selected_species,))
-                conn.commit()
-                conn.close()
-                st.success(f"🗑️ Đã xoá toàn bộ nhân vật của loài {selected_species}!")
+    # --- Sửa hoặc xoá từng nhân vật ---
+    st.markdown("#### ✏️ Tuỳ chỉnh nâng cao")
 
-        st.markdown("---")
+    df = get_all_characters()
 
-        # --- Sửa hoặc xoá từng nhân vật ---
-        st.markdown("#### ✏️ Tuỳ chỉnh nâng cao")
-
-        df = get_all_characters()
-        species_available = sorted(df["species"].unique().tolist()) if not df.empty else []
-
+    if df.empty:
+        st.info("⚠️ Chưa có nhân vật nào trong hệ thống.")
+    else:
+        species_available = sorted(df["species"].unique().tolist())
         species_edit = st.selectbox("🔍 Chọn loài để chỉnh sửa", ["--- Chọn loài ---"] + species_available, key="edit_species")
 
         if species_edit != "--- Chọn loài ---":
             df_filtered = df[df["species"] == species_edit]
             names_in_species = df_filtered["name"].tolist()
 
-            name_edit = st.selectbox("🧬 Chọn nhân vật", ["--- Chọn nhân vật ---"] + names_in_species, key="edit_name")
+            if not names_in_species:
+                st.info("⚠️ Không có nhân vật nào thuộc loài này.")
+            else:
+                name_edit = st.selectbox("🧬 Chọn nhân vật", ["--- Chọn nhân vật ---"] + names_in_species, key="edit_name")
 
-            if name_edit != "--- Chọn nhân vật ---":
-                char_info = df_filtered[df_filtered["name"] == name_edit].iloc[0]
+                if name_edit != "--- Chọn nhân vật ---":
+                    char_info = df_filtered[df_filtered["name"] == name_edit].iloc[0]
 
-                st.markdown("##### ✍️ Sửa thông tin chỉ số")
-                attrs = ["strength", "stamina", "vitality", "dexterity", "agility"]
-                new_values = {}
-                for attr in attrs:
-                    new_values[attr] = st.number_input(
-                        f"{attr.capitalize()}", value=int(char_info[attr]), min_value=0, step=1
-                    )
+                    # Sửa tên
+                    st.markdown("##### ✍️ Chỉnh sửa thông tin")
+                    new_name = st.text_input("🆕 Đổi tên nhân vật", value=char_info["name"])
 
-                if st.button("💾 Lưu chỉnh sửa"):
-                    conn = create_connection()
-                    for attr, val in new_values.items():
-                        conn.execute(f"UPDATE characters SET {attr} = ? WHERE id = ?", (val, int(char_info["id"])))
-                    conn.commit()
-                    conn.close()
-                    st.success("✅ Đã lưu thay đổi!")
+                    # Sửa chỉ số
+                    attrs = ["strength", "stamina", "vitality", "dexterity", "agility"]
+                    new_values = {}
+                    for attr in attrs:
+                        new_values[attr] = st.number_input(
+                            f"{attr.capitalize()}", value=int(char_info[attr]), min_value=0, step=1
+                        )
 
-                if st.button("❌ Xoá nhân vật này"):
-                    delete_character(char_info["id"])
-                    st.success("🗑️ Đã xoá nhân vật thành công!")
+                    if st.button("💾 Lưu chỉnh sửa"):
+                        conn = create_connection()
+                        conn.execute("UPDATE characters SET name = ? WHERE id = ?", (new_name, int(char_info["id"])))
+                        for attr, val in new_values.items():
+                            conn.execute(f"UPDATE characters SET {attr} = ? WHERE id = ?", (val, int(char_info["id"])))
+                        conn.commit()
+                        conn.close()
+                        st.success("✅ Đã lưu thay đổi!")
 
-    else:
-        st.info("🔒 Nhập đúng mật khẩu để truy cập quyền admin.")
+                    if st.button("❌ Xoá nhân vật này"):
+                        delete_character(char_info["id"])
+                        st.success("🗑️ Đã xoá nhân vật thành công!")
