@@ -145,109 +145,142 @@ with tab3:
 with tab4:
     st.header("🚀 Chuẩn bị Trận Đấu")
 
-    # Khởi tạo biến session nếu chưa có
-    for key in ["player1", "player2", "attacker", "defender", "round_index", "turn", "combat_logs", "is_bot", "dice_rolled"]:
+    # ===== Khởi tạo session state =====
+    defaults = {
+        "player1": None, "player2": None, "attacker": None, "defender": None,
+        "round_index": 1, "turn": 1, "combat_logs": [],
+        "is_bot": False, "dice_rolled": False, "selected_character": False,
+        "p1_roll": None, "p2_roll": None, "p1_done": False, "p2_done": False,
+        "battle_started": False
+    }
+    for key, val in defaults.items():
         if key not in st.session_state:
-            st.session_state[key] = None
-    if "battle_started" not in st.session_state:
-        st.session_state.battle_started = False
-    if "selected_character" not in st.session_state:
-        st.session_state.selected_character = False
+            st.session_state[key] = val
 
-    # === Bảng icon species ===
+    # ===== Icon theo loài =====
     species_icon_map = {
-        "Witch": "🧙",
-        "Vampire": "🧛",
-        "Werewolf": "🐺",
-        "Skeleton": "💀",
-        "Demon": "😈",
-        "Scarecrow": "🎃",
-        "Butcher": "🔪",
-        "Yeti": "🧊",
+        "Witch": "🧙", "Vampire": "🧛", "Werewolf": "🐺", "Skeleton": "💀",
+        "Demon": "😈", "Scarecrow": "🎃", "Butcher": "🔪", "Yeti": "🧊",
     }
 
-    # ===== Chọn chế độ =====
+    # ===== Chế độ chơi =====
     mode = st.radio("🎮 Chọn chế độ chơi", ["PvP – Người vs Người", "PvE – Người vs Máy"])
     is_bot = mode == "PvE – Người vs Máy"
     st.session_state.is_bot = is_bot
 
     col1, col2 = st.columns(2)
 
-    # === Người chơi 1 ===
+    # ====== Chọn Người chơi 1 ======
     with col1:
-        species_options = ["--- Chọn loài ---"] + list(species_base_stats.keys())
-        species1 = st.selectbox("🔮 Chọn loài", species_options, key="sp1-select")
-
+        species1 = st.selectbox("🔮 Chọn loài", ["--- Chọn loài ---"] + list(species_base_stats.keys()), key="sp1-select")
+        name1 = None
         if species1 != "--- Chọn loài ---":
-            icon1 = species_icon_map.get(species1, "❓")
-            st.markdown(f"### {icon1} Người chơi 1")
             df1 = get_all_characters()
             df1 = df1[df1["species"] == species1]
-            name_options1 = ["--- Chọn nhân vật ---"] + df1["name"].tolist()
-            name1 = st.selectbox("🧬 Nhân vật", name_options1, key="char1-select")
-            if name1 == "--- Chọn nhân vật ---":
-                name1 = None
-        else:
-            name1 = None
+            icon1 = species_icon_map.get(species1, "❓")
+            st.markdown(f"### {icon1} Người chơi 1")
+            if df1.empty:
+                st.warning("⚠️ Loài này chưa có nhân vật.")
+                st.stop()
+            else:
+                name1 = st.selectbox("🧬 Nhân vật", ["--- Chọn nhân vật ---"] + df1["name"].tolist(), key="char1-select")
+                if name1 == "--- Chọn nhân vật ---":
+                    name1 = None
 
-    # === Người chơi 2 hoặc Bot ===
+    # ====== Chọn Người chơi 2 hoặc Bot ======
     with col2:
-        species_options2 = ["--- Chọn loài ---"] + list(species_base_stats.keys())
-        species2 = st.selectbox("🔮 Chọn loài", species_options2, key="sp2-select")
-
+        species2 = st.selectbox("🔮 Chọn loài", ["--- Chọn loài ---"] + list(species_base_stats.keys()), key="sp2-select")
+        name2 = None
         if species2 != "--- Chọn loài ---":
+            df2 = get_all_characters()
+            df2 = df2[df2["species"] == species2]
             icon2 = species_icon_map.get(species2, "❓")
             title2 = "🤖 Bot" if is_bot else f"{icon2} Người chơi 2"
             st.markdown(f"### {title2}")
-            df2 = get_all_characters()
-            df2 = df2[df2["species"] == species2]
-            name_options2 = ["--- Chọn nhân vật ---"] + df2["name"].tolist()
-            name2 = st.selectbox("🧬 Nhân vật", name_options2, key="char2-select")
-            if name2 == "--- Chọn nhân vật ---":
-                name2 = None
-        else:
-            name2 = None
-
-    # ===== Bắt đầu trận đấu =====
-    if name1 and name2 and not st.session_state.dice_rolled:
-        if st.button("🎲 Tung Xúc Xắc Bắt Đầu"):
-            from models import create_character_from_dict
-            import random as rd
-
-            df = get_all_characters()
-            info1 = df[df["name"] == name1].iloc[0].to_dict()
-            info2 = df[df["name"] == name2].iloc[0].to_dict()
-
-            player1 = create_character_from_dict(info1)
-            player2 = create_character_from_dict(info2)
-
-            # Tung xúc xắc
-            p1_roll, p2_roll = rd.randint(1, 6), rd.randint(1, 6)
-            if p1_roll >= p2_roll:
-                attacker, defender = player1, player2
+            if df2.empty:
+                st.warning("⚠️ Loài này chưa có nhân vật.")
+                st.stop()
             else:
-                attacker, defender = player2, player1
+                name2 = st.selectbox("🧬 Nhân vật", ["--- Chọn nhân vật ---"] + df2["name"].tolist(), key="char2-select")
+                if name2 == "--- Chọn nhân vật ---":
+                    name2 = None
 
-            # Gán vào session_state
-            st.session_state.player1 = player1
-            st.session_state.player2 = player2
-            st.session_state.attacker = attacker
-            st.session_state.defender = defender
+    # ===== Tạo nhân vật từ DataFrame =====
+    def build_players():
+        from models import create_character_from_dict
+        df_all = get_all_characters()
+        info1 = df_all[df_all["name"] == name1].iloc[0].to_dict()
+        info2 = df_all[df_all["name"] == name2].iloc[0].to_dict()
+        st.session_state.player1 = create_character_from_dict(info1)
+        st.session_state.player2 = create_character_from_dict(info2)
+
+    # ===== PvE: Tung xúc xắc 1 lần =====
+    if is_bot and name1 and name2:
+        if st.button("🎲 Tung xúc xắc để bắt đầu"):
+            build_players()
+            p1_roll = rd.randint(1, 6)
+            p2_roll = rd.randint(1, 6)
+            st.session_state.p1_roll = p1_roll
+            st.session_state.p2_roll = p2_roll
+
+            if p1_roll >= p2_roll:
+                st.session_state.attacker = st.session_state.player1
+                st.session_state.defender = st.session_state.player2
+            else:
+                st.session_state.attacker = st.session_state.player2
+                st.session_state.defender = st.session_state.player1
+
+            st.session_state.battle_started = True
+            st.session_state.selected_character = True
+            st.session_state.dice_rolled = True
+
+            st.success(f"🎲 Bạn tung được {p1_roll}, Bot tung được {p2_roll}")
+            st.info(f"🎯 {st.session_state.attacker.name} sẽ đi trước")
+            st.rerun()
+
+    # ===== PvP: Từng người chơi tự tung xúc xắc =====
+    elif not is_bot and name1 and name2:
+        build_players()
+        col3, col4 = st.columns(2)
+        with col3:
+            if st.button("🎲 Người chơi 1 tung"):
+                st.session_state.p1_roll = rd.randint(1, 6)
+                st.session_state.p1_done = True
+        with col4:
+            if st.button("🎲 Người chơi 2 tung"):
+                st.session_state.p2_roll = rd.randint(1, 6)
+                st.session_state.p2_done = True
+
+        # Hiển thị kết quả từng người
+        if st.session_state.p1_roll is not None:
+            st.info(f"🧙 Người chơi 1 tung được: 🎲 {st.session_state.p1_roll}")
+        if st.session_state.p2_roll is not None:
+            icon = "🧙" if not is_bot else "🤖"
+            st.info(f"{icon} Người chơi 2 tung được: 🎲 {st.session_state.p2_roll}")
+
+        # Khi cả hai đã tung
+        if st.session_state.p1_done and st.session_state.p2_done:
+            p1 = st.session_state.player1
+            p2 = st.session_state.player2
+            if st.session_state.p1_roll >= st.session_state.p2_roll:
+                atk, dfd = p1, p2
+            else:
+                atk, dfd = p2, p1
+
+            st.session_state.attacker = atk
+            st.session_state.defender = dfd
             st.session_state.round_index = 1
             st.session_state.turn = 1
             st.session_state.combat_logs = []
             st.session_state.battle_started = True
             st.session_state.selected_character = True
-            st.session_state.dice_rolled = True  # Đánh dấu đã tung xúc xắc
+            st.session_state.dice_rolled = True
 
-            st.success(f"🎯 {attacker.name} tung xúc xắc đi trước!")
-            st.rerun()  # 👉 rerun để hiển thị ngay tab Chiến Đấu
-    elif st.session_state.dice_rolled:
-        atk = st.session_state.attacker
-        st.success(f"🎯 {atk.name} đã được chọn đi trước!")
-        st.info("👉 Chuyển sang tab ⚔️ Chiến Đấu để bắt đầu hành động.")
-    else:
-        st.info("📌 Hãy chọn đủ loài và nhân vật để bắt đầu trận đấu.")
+            st.success(f"🎯 {atk.name} sẽ đi trước!")
+            st.rerun()
+
+    elif name1 is None or name2 is None:
+        st.info("📌 Hãy chọn đủ loài và nhân vật.")
 
 # === BẮT ĐẦU TAB 5 ===
 if tab5:
