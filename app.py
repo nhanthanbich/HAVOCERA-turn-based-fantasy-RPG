@@ -80,15 +80,19 @@ with tab3:
     # Lấy toàn bộ dữ liệu
     df = get_all_characters()
 
-    # Bảng lọc loài
+    # Lọc theo loài
     species_list = list(species_base_stats.keys())
     species_filter = st.selectbox("🔍 Lọc theo loài", ["Tất cả"] + species_list)
 
     if species_filter != "Tất cả":
         df = df[df["species"] == species_filter]
 
-    # Ô tìm kiếm theo tên
-    name_query = st.text_input("🔎 Tìm theo tên nhân vật")
+    # Lọc theo tên + Nút kính lúp
+    col1, col2 = st.columns([10, 1])
+    with col1:
+        name_query = st.text_input("🔎 Tìm theo tên nhân vật", label_visibility="collapsed", placeholder="Nhập tên...")
+    with col2:
+        st.markdown("### 🔍")  # biểu tượng giả lập nút tìm (không có chức năng bấm)
 
     if name_query:
         df = df[df["name"].str.lower().str.contains(name_query.lower())]
@@ -118,7 +122,7 @@ with tab3:
             'Yeti': '#e0f7fa',
         }.get(species, '#ffffff') }"
 
-    # Hiển thị bảng kết quả
+    # Hiển thị bảng
     if not df.empty:
         df["🧬 Species"] = df["species"].apply(lambda s: f"{get_species_icon(s)} {s}")
         df_view = df[["id", "name", "🧬 Species", "role", "strength", "stamina", "vitality", "dexterity", "agility"]]
@@ -130,7 +134,6 @@ with tab3:
         st.dataframe(styled_df, use_container_width=True)
     else:
         st.info("⚠️ Không có nhân vật nào phù hợp với bộ lọc.")
-
 # ===== TAB 4: Bắt đầu =====
 with tab4:
     st.header("🚀 Chuẩn bị Trận Đấu")
