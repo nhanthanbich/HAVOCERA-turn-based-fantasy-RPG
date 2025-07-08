@@ -289,7 +289,7 @@ if tab5:
 with st.sidebar.expander("🔐 Quản Trị Hệ Thống", expanded=False):
     st.markdown("### 🔐 Xác Thực Admin")
 
-    # Biến xác thực admin dùng session_state
+    # Sử dụng session_state để theo dõi trạng thái xác thực
     if "admin_authenticated" not in st.session_state:
         st.session_state.admin_authenticated = False
 
@@ -299,11 +299,12 @@ with st.sidebar.expander("🔐 Quản Trị Hệ Thống", expanded=False):
             if password == "duyanh":
                 st.session_state.admin_authenticated = True
                 st.success("✅ Đã xác thực quyền admin!")
+                st.experimental_rerun()  # 👉 Bắt buộc reload để hiển thị ngay nội dung admin
             else:
                 st.error("❌ Sai mật khẩu!")
         st.stop()
 
-    # Nếu đã xác thực admin, hiển thị các tuỳ chọn
+    # ✅ Sau khi xác thực: hiển thị tất cả tùy chọn quản trị
     st.success("✅ Đang ở chế độ quản trị!")
 
     # --- Xoá toàn bộ database ---
@@ -330,7 +331,7 @@ with st.sidebar.expander("🔐 Quản Trị Hệ Thống", expanded=False):
 
     st.markdown("---")
 
-    # --- Sửa hoặc xoá từng nhân vật ---
+    # --- Tuỳ chỉnh nâng cao ---
     st.markdown("#### ✏️ Tuỳ chỉnh nâng cao")
 
     df = get_all_characters()
@@ -353,18 +354,20 @@ with st.sidebar.expander("🔐 Quản Trị Hệ Thống", expanded=False):
                 if name_edit != "--- Chọn nhân vật ---":
                     char_info = df_filtered[df_filtered["name"] == name_edit].iloc[0]
 
-                    # Sửa tên
                     st.markdown("##### ✍️ Chỉnh sửa thông tin")
-                    new_name = st.text_input("🆕 Đổi tên nhân vật", value=char_info["name"])
 
-                    # Sửa chỉ số
+                    # Nhập tên mới
+                    new_name = st.text_input("🆕 Đổi tên nhân vật", value=char_info["name"], key="edit_name_input")
+
+                    # Nhập chỉ số mới
                     attrs = ["strength", "stamina", "vitality", "dexterity", "agility"]
                     new_values = {}
                     for attr in attrs:
                         new_values[attr] = st.number_input(
-                            f"{attr.capitalize()}", value=int(char_info[attr]), min_value=0, step=1
+                            f"{attr.capitalize()}", value=int(char_info[attr]), min_value=0, step=1, key=f"{attr}_edit"
                         )
 
+                    # Lưu thay đổi
                     if st.button("💾 Lưu chỉnh sửa"):
                         conn = create_connection()
                         conn.execute("UPDATE characters SET name = ? WHERE id = ?", (new_name, int(char_info["id"])))
@@ -374,6 +377,7 @@ with st.sidebar.expander("🔐 Quản Trị Hệ Thống", expanded=False):
                         conn.close()
                         st.success("✅ Đã lưu thay đổi!")
 
+                    # Xoá nhân vật
                     if st.button("❌ Xoá nhân vật này"):
                         delete_character(char_info["id"])
                         st.success("🗑️ Đã xoá nhân vật thành công!")
