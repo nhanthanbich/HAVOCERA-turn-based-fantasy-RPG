@@ -115,14 +115,26 @@ with tab3:
 with tab4:
     st.header("🚀 Chuẩn bị Trận Đấu")
 
-    # Init biến nếu chưa có
-    for key in ["player1", "player2", "attacker", "defender", "round_index", "turn", "combat_logs", "is_bot"]:
+    # Khởi tạo biến session nếu chưa có
+    for key in ["player1", "player2", "attacker", "defender", "round_index", "turn", "combat_logs", "is_bot", "dice_rolled"]:
         if key not in st.session_state:
             st.session_state[key] = None
     if "battle_started" not in st.session_state:
         st.session_state.battle_started = False
     if "selected_character" not in st.session_state:
         st.session_state.selected_character = False
+
+    # === Bảng icon species ===
+    species_icon_map = {
+        "Witch": "🧙",
+        "Vampire": "🧛",
+        "Werewolf": "🐺",
+        "Skeleton": "💀",
+        "Demon": "😈",
+        "Scarecrow": "🎃",  # tránh 🪆 vì lỗi font
+        "Butcher": "🔪",
+        "Yeti": "🧊",
+    }
 
     # ===== Chọn chế độ =====
     mode = st.radio("🎮 Chọn chế độ chơi", ["PvP – Người vs Người", "PvE – Người vs Máy"])
@@ -133,8 +145,10 @@ with tab4:
 
     # === Người chơi 1 ===
     with col1:
-        st.markdown("### 🧙 Người chơi 1")
         species1 = st.selectbox("🔮 Chọn loài", list(species_base_stats.keys()), key="sp1-select")
+        icon1 = species_icon_map.get(species1, "❓")
+        st.markdown(f"### {icon1} Người chơi 1")
+
         df1 = get_all_characters()
         df1 = df1[df1["species"] == species1]
 
@@ -146,8 +160,11 @@ with tab4:
 
     # === Người chơi 2 hoặc Bot ===
     with col2:
-        st.markdown(f"### {'🤖 Bot' if is_bot else '🧙 Người chơi 2'}")
         species2 = st.selectbox("🔮 Chọn loài", list(species_base_stats.keys()), key="sp2-select")
+        icon2 = species_icon_map.get(species2, "❓")
+        title2 = "🤖 Bot" if is_bot else f"{icon2} Người chơi 2"
+        st.markdown(f"### {title2}")
+
         df2 = get_all_characters()
         df2 = df2[df2["species"] == species2]
 
@@ -157,42 +174,48 @@ with tab4:
             name2 = None
             st.warning("⚠️ Không có nhân vật cho loài này.")
 
-    # ===== Nút bắt đầu chiến đấu =====
-    if st.button("🚀 Bắt đầu chiến đấu") and name1 and name2:
-        from models import create_character_from_dict
-        import random as rd
+    # ===== Bắt đầu trận đấu =====
+    if name1 and name2 and not st.session_state.dice_rolled:
+        if st.button("🎲 Tung Xúc Xắc Bắt Đầu"):
+            from models import create_character_from_dict
+            import random as rd
 
-        df = get_all_characters()
-        info1 = df[df["name"] == name1].iloc[0].to_dict()
-        info2 = df[df["name"] == name2].iloc[0].to_dict()
+            df = get_all_characters()
+            info1 = df[df["name"] == name1].iloc[0].to_dict()
+            info2 = df[df["name"] == name2].iloc[0].to_dict()
 
-        player1 = create_character_from_dict(info1)
-        player2 = create_character_from_dict(info2)
+            player1 = create_character_from_dict(info1)
+            player2 = create_character_from_dict(info2)
 
-        # Tung xúc xắc
-        p1_roll, p2_roll = rd.randint(1, 6), rd.randint(1, 6)
-        if p1_roll >= p2_roll:
-            attacker, defender = player1, player2
-        else:
-            attacker, defender = player2, player1
+            # Tung xúc xắc
+            p1_roll, p2_roll = rd.randint(1, 6), rd.randint(1, 6)
+            if p1_roll >= p2_roll:
+                attacker, defender = player1, player2
+            else:
+                attacker, defender = player2, player1
 
-        # Gán vào session
-        st.session_state.player1 = player1
-        st.session_state.player2 = player2
-        st.session_state.attacker = attacker
-        st.session_state.defender = defender
-        st.session_state.round_index = 1
-        st.session_state.turn = 1
-        st.session_state.combat_logs = []
-        st.session_state.battle_started = True
-        st.session_state.selected_character = True  # 👉 để mở tab 5
+            # Gán vào session_state
+            st.session_state.player1 = player1
+            st.session_state.player2 = player2
+            st.session_state.attacker = attacker
+            st.session_state.defender = defender
+            st.session_state.round_index = 1
+            st.session_state.turn = 1
+            st.session_state.combat_logs = []
+            st.session_state.battle_started = True
+            st.session_state.selected_character = True
+            st.session_state.dice_rolled = True  # Đánh dấu đã tung xúc xắc
 
-        st.success(f"🎯 {attacker.name} tung xúc xắc đi trước!")
-        st.info("👉 Chuyển qua tab ⚔️ Chiến Đấu để bắt đầu hành động!")
+            st.success(f"🎯 {attacker.name} tung xúc xắc đi trước!")
+            st.rerun()  # 👉 rerun để hiển thị ngay tab Chiến Đấu
+    elif st.session_state.dice_rolled:
+        atk = st.session_state.attacker
+        st.success(f"🎯 {atk.name} đã được chọn đi trước!")
+        st.info("👉 Chuyển sang tab ⚔️ Chiến Đấu để bắt đầu hành động.")
     else:
-        st.info("📌 Hãy chọn đủ 2 nhân vật để bắt đầu.")
+        st.info("📌 Hãy chọn đủ 2 nhân vật rồi bắt đầu trận đấu.")
 
-# === BẮT ĐẦU TAB 4 ===
+# === BẮT ĐẦU TAB 5 ===
 if tab5:
     with tab5:
         st.header("⚔️ Trận Chiến Bắt Đầu!")
