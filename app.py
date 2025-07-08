@@ -146,6 +146,8 @@ with tab3:
 with tab4:
     st.header("🚀 Chuẩn bị Trận Đấu")
 
+    import random as rd
+
     # ===== Khởi tạo session state =====
     defaults = {
         "player1": None, "player2": None, "attacker": None, "defender": None,
@@ -215,70 +217,69 @@ with tab4:
         st.session_state.player1 = create_character_from_dict(info1)
         st.session_state.player2 = create_character_from_dict(info2)
 
-    # ===== PvE: Tung xúc xắc 1 lần =====
+    # ===== PvE: Người đấu máy =====
     if is_bot and name1 and name2:
-        if st.button("🎲 Tung xúc xắc để bắt đầu"):
-            build_players()
-            p1_roll = rd.randint(1, 6)
-            p2_roll = rd.randint(1, 6)
-            st.session_state.p1_roll = p1_roll
-            st.session_state.p2_roll = p2_roll
+        if not st.session_state.dice_rolled:
+            if st.button("🎲 Tung xúc xắc để bắt đầu"):
+                build_players()
+                st.session_state.p1_roll = rd.randint(1, 6)
+                st.session_state.p2_roll = rd.randint(1, 6)
+                st.session_state.dice_rolled = True
 
-            if p1_roll >= p2_roll:
-                st.session_state.attacker = st.session_state.player1
-                st.session_state.defender = st.session_state.player2
-            else:
-                st.session_state.attacker = st.session_state.player2
-                st.session_state.defender = st.session_state.player1
+        if st.session_state.dice_rolled:
+            st.success(f"🎲 Bạn tung được: {st.session_state.p1_roll} | 🤖 Bot: {st.session_state.p2_roll}")
+            if st.button("✅ Bắt đầu trận đấu"):
+                p1 = st.session_state.player1
+                p2 = st.session_state.player2
+                if st.session_state.p1_roll >= st.session_state.p2_roll:
+                    st.session_state.attacker = p1
+                    st.session_state.defender = p2
+                else:
+                    st.session_state.attacker = p2
+                    st.session_state.defender = p1
+                st.session_state.battle_started = True
+                st.session_state.selected_character = True
+                st.rerun()
 
-            st.session_state.battle_started = True
-            st.session_state.selected_character = True
-            st.session_state.dice_rolled = True
-
-            st.success(f"🎲 Bạn tung được {p1_roll}, Bot tung được {p2_roll}")
-            st.info(f"🎯 {st.session_state.attacker.name} sẽ đi trước")
-            st.rerun()
-
-    # ===== PvP: Từng người chơi tự tung xúc xắc =====
+    # ===== PvP: Hai người lần lượt tung =====
     elif not is_bot and name1 and name2:
         build_players()
         col3, col4 = st.columns(2)
+
         with col3:
-            if st.button("🎲 Người chơi 1 tung"):
-                st.session_state.p1_roll = rd.randint(1, 6)
-                st.session_state.p1_done = True
+            if not st.session_state.p1_done:
+                if st.button("🎲 Người chơi 1 tung"):
+                    st.session_state.p1_roll = rd.randint(1, 6)
+                    st.session_state.p1_done = True
+
         with col4:
-            if st.button("🎲 Người chơi 2 tung"):
-                st.session_state.p2_roll = rd.randint(1, 6)
-                st.session_state.p2_done = True
+            if not st.session_state.p2_done:
+                if st.button("🎲 Người chơi 2 tung"):
+                    st.session_state.p2_roll = rd.randint(1, 6)
+                    st.session_state.p2_done = True
 
-        # Hiển thị kết quả từng người
-        if st.session_state.p1_roll is not None:
+        if st.session_state.p1_done:
             st.info(f"🧙 Người chơi 1 tung được: 🎲 {st.session_state.p1_roll}")
-        if st.session_state.p2_roll is not None:
-            icon = "🧙" if not is_bot else "🤖"
-            st.info(f"{icon} Người chơi 2 tung được: 🎲 {st.session_state.p2_roll}")
+        if st.session_state.p2_done:
+            st.info(f"🧙 Người chơi 2 tung được: 🎲 {st.session_state.p2_roll}")
 
-        # Khi cả hai đã tung
-        if st.session_state.p1_done and st.session_state.p2_done:
-            p1 = st.session_state.player1
-            p2 = st.session_state.player2
-            if st.session_state.p1_roll >= st.session_state.p2_roll:
-                atk, dfd = p1, p2
-            else:
-                atk, dfd = p2, p1
-
-            st.session_state.attacker = atk
-            st.session_state.defender = dfd
-            st.session_state.round_index = 1
-            st.session_state.turn = 1
-            st.session_state.combat_logs = []
-            st.session_state.battle_started = True
-            st.session_state.selected_character = True
-            st.session_state.dice_rolled = True
-
-            st.success(f"🎯 {atk.name} sẽ đi trước!")
-            st.rerun()
+        if st.session_state.p1_done and st.session_state.p2_done and not st.session_state.dice_rolled:
+            if st.button("✅ Bắt đầu trận đấu"):
+                p1 = st.session_state.player1
+                p2 = st.session_state.player2
+                if st.session_state.p1_roll >= st.session_state.p2_roll:
+                    st.session_state.attacker = p1
+                    st.session_state.defender = p2
+                else:
+                    st.session_state.attacker = p2
+                    st.session_state.defender = p1
+                st.session_state.round_index = 1
+                st.session_state.turn = 1
+                st.session_state.combat_logs = []
+                st.session_state.battle_started = True
+                st.session_state.selected_character = True
+                st.session_state.dice_rolled = True
+                st.rerun()
 
     elif name1 is None or name2 is None:
         st.info("📌 Hãy chọn đủ loài và nhân vật.")
