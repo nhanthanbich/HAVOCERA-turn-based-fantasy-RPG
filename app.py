@@ -289,7 +289,19 @@ with tab4:
 # === BẮT ĐẦU TAB 5 ===
 if tab5:
     with tab5:
-        # ===== THÔNG TIN NHÂN VẬT =====
+        st.header("⚔️ Trận Chiến Bắt Đầu!")
+
+        # ===== Kiểm tra đã bắt đầu chưa =====
+        if not st.session_state.get("battle_started", False):
+            st.info("💡 Hãy chọn nhân vật và nhấn 'Bắt đầu trận đấu' ở Tab 4 trước khi vào trận.")
+            st.stop()
+
+        # ===== Gán attacker/defender =====
+        atk = st.session_state.attacker
+        dfd = st.session_state.defender
+        round_idx = st.session_state.round_index
+
+        # ===== Hiển thị thông tin nhân vật =====
         def show_info(p):
             try:
                 st.subheader(f"🧍 {p.name} ({p.species})")
@@ -304,7 +316,7 @@ if tab5:
             except Exception as e:
                 st.error(f"💥 Không thể hiển thị thông tin nhân vật: {e}")
                 st.stop()
-        
+
         try:
             col1, col2 = st.columns(2)
             with col1:
@@ -315,29 +327,16 @@ if tab5:
             st.error(f"🚫 Không thể tạo layout nhân vật: {e}")
             st.stop()
 
-        st.header("⚔️ Trận Chiến Bắt Đầu!")
-
-        if not st.session_state.get("battle_started", False):
-            st.info("💡 Hãy chọn nhân vật và nhấn 'Bắt đầu chiến đấu' ở Tab 3 trước khi vào trận.")
-            st.stop()
-
-        atk = st.session_state.attacker
-        dfd = st.session_state.defender
-        round_idx = st.session_state.round_index
-
-        # DEBUG nếu cần
-        # st.write("🧪 ATK:", vars(atk))
-        # st.write("🧪 DEF:", vars(dfd))
-
+        # ===== Header vòng đấu =====
         st.markdown(f"## 🔥 Vòng {round_idx} – {atk.name} hành động!")
-        
-        # ===== HÀNH ĐỘNG =====
         st.divider()
         st.subheader("🎬 Hành động đang diễn ra...")
 
+        # ===== Kích hoạt lượt mới (nếu có hàm) =====
         if hasattr(atk, "start_turn"):
             atk.start_turn()
 
+        # ===== Bot hoặc Người chơi điều khiển hành động =====
         if st.session_state.is_bot and atk == st.session_state.player2:
             atk.choose_skill(dfd, auto=True)
         else:
@@ -346,10 +345,11 @@ if tab5:
             else:
                 atk.attack(dfd)
 
+        # ===== Ghi log chiến đấu =====
         st.session_state.combat_logs += atk.get_logs()
         atk.clear_logs()
 
-        # ===== KẾT THÚC TRẬN =====
+        # ===== Xử lý kết thúc trận =====
         if atk.hp <= 0 and dfd.hp <= 0:
             st.error("☠️ Cả hai chiến binh đã gục ngã cùng lúc. Hòa nhau!")
             st.session_state.battle_started = False
@@ -360,24 +360,26 @@ if tab5:
             st.success(f"🏆 {dfd.name} LẬT KÈO CHIẾN THẮNG!")
             st.session_state.battle_started = False
         else:
+            # Đổi lượt, tăng round nếu cần
             st.session_state.attacker, st.session_state.defender = dfd, atk
             st.session_state.turn += 1
             if st.session_state.turn % 2 == 1:
                 st.session_state.round_index += 1
 
-        # ===== LOG =====
-        st.divider()
-        st.subheader("📜 Nhật ký chiến đấu")
-        for log in st.session_state.combat_logs[::-1][:10]:
-            st.markdown(f"- {log}")
-
-        # ===== SƯƠNG MÙ =====
+        # ===== Fog Decay (sương mù) =====
         if st.session_state.turn >= 41:
             decay = ((st.session_state.turn - 21) // 20) * 100
+            st.caption(f"🌫️ Lượt {st.session_state.turn}: Sương mù gây {decay} sát thương nếu máu > 200")
             for p in [atk, dfd]:
                 if p.hp > 200:
                     p.hp = max(1, p.hp - decay)
                     st.warning(f"🌫️ {p.name} mất {decay} HP do sương mù tử khí!")
+
+        # ===== Nhật ký chiến đấu =====
+        st.divider()
+        st.subheader("📜 Nhật ký chiến đấu")
+        for log in st.session_state.combat_logs[::-1][:10]:
+            st.markdown(f"- {log}")
 
 # ===== KHÔNG TAB! Reset DB Ẩn Ở Góc Khuất =====
 with st.sidebar.expander("🔐 Quản Trị Hệ Thống", expanded=False):
