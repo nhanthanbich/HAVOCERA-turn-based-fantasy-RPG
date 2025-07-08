@@ -160,18 +160,15 @@ with tab4:
         if key not in st.session_state:
             st.session_state[key] = val
 
-    # ===== Icon theo loài =====
     species_icon_map = {
         "Witch": "🧙", "Vampire": "🧛", "Werewolf": "🐺", "Skeleton": "💀",
         "Demon": "😈", "Scarecrow": "🎃", "Butcher": "🔪", "Yeti": "🧊",
     }
 
-    # ===== Helper: Reset xúc xắc nếu chọn lại nhân vật =====
     def reset_dice_state():
         for k in ["p1_roll", "p2_roll", "p1_done", "p2_done", "dice_rolled", "battle_started"]:
             st.session_state[k] = False if isinstance(defaults[k], bool) else None
 
-    # ===== Helper: Tạo nhân vật từ DataFrame =====
     def build_players():
         from models import create_character_from_dict
         df_all = get_all_characters()
@@ -182,12 +179,12 @@ with tab4:
 
     # ===== Chế độ chơi =====
     mode = st.radio("🎮 Chọn chế độ chơi", ["PvP – Người vs Người", "PvE – Người vs Máy"])
-    st.session_state.is_bot = (mode == "PvE – Người vs Máy")
-    is_bot = st.session_state.is_bot
+    is_bot = mode == "PvE – Người vs Máy"
+    st.session_state.is_bot = is_bot
 
     col1, col2 = st.columns(2)
 
-    # ====== Người chơi 1 ======
+    # ===== Người chơi 1 =====
     with col1:
         species1 = st.selectbox("🔮 Chọn loài", ["--- Chọn loài ---"] + list(species_base_stats.keys()), key="sp1")
         st.session_state.name1 = None
@@ -204,7 +201,7 @@ with tab4:
                 if name1 != "--- Chọn nhân vật ---":
                     st.session_state.name1 = name1
 
-    # ====== Người chơi 2 / Bot ======
+    # ===== Người chơi 2 / Bot =====
     with col2:
         species2 = st.selectbox("🔮 Chọn loài", ["--- Chọn loài ---"] + list(species_base_stats.keys()), key="sp2")
         st.session_state.name2 = None
@@ -239,6 +236,9 @@ with tab4:
 
         if st.session_state.dice_rolled:
             st.success(f"🎲 Bạn tung: {st.session_state.p1_roll}, 🤖 Bot tung: {st.session_state.p2_roll}")
+            attacker = st.session_state.name1 if st.session_state.p1_roll >= st.session_state.p2_roll else st.session_state.name2
+            st.info(f"🎯 {attacker} sẽ tấn công trước!")
+
             if st.button("✅ Bắt đầu trận đấu"):
                 p1 = st.session_state.player1
                 p2 = st.session_state.player2
@@ -267,6 +267,9 @@ with tab4:
             st.info(f"🧙 Người chơi 2 tung được: 🎲 {st.session_state.p2_roll}")
 
         if st.session_state.p1_done and st.session_state.p2_done and not st.session_state.dice_rolled:
+            attacker = st.session_state.name1 if st.session_state.p1_roll >= st.session_state.p2_roll else st.session_state.name2
+            st.info(f"🎯 {attacker} sẽ tấn công trước!")
+
             if st.button("✅ Bắt đầu trận đấu"):
                 p1 = st.session_state.player1
                 p2 = st.session_state.player2
