@@ -299,7 +299,7 @@ with st.sidebar.expander("🔐 Quản Trị Hệ Thống", expanded=False):
             if password == "duyanh":
                 st.session_state.admin_authenticated = True
                 st.success("✅ Đã xác thực quyền admin!")
-                st.experimental_rerun()  # 👉 Bắt buộc reload để hiển thị ngay nội dung admin
+                st.rerun()  
             else:
                 st.error("❌ Sai mật khẩu!")
         st.stop()
