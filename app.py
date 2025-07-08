@@ -2,6 +2,7 @@ import streamlit as st
 from db import create_table, insert_character, get_all_characters, delete_character, create_connection
 from stats import species_base_stats, rand_stat
 from models import Witch, Vampire, Werewolf, get_class_by_species, create_character_from_dict
+import random as rd
 
 st.markdown("""
 <h1 style='font-size: 42px; font-weight: normal;'>
