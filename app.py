@@ -21,11 +21,11 @@ if "selected_character" not in st.session_state:
     st.session_state.selected_character = None
 
 # Định nghĩa các tab chính
-tabs = ["📘 Hướng Dẫn", "🛠️ Quản Lý Nhân Vật", "👥 Danh Sách Nhân Vật", "🎯 Bắt Đầu"]
+tabs = ["📘 Hướng dẫn", "🛠️ Tạo nhân vật", "👥 Danh sách nhân Vật", "🎯 Bắt đầu"]
 
 # Thêm Tab "Chiến Đấu" nếu có nhân vật được chọn
 if st.session_state.selected_character:
-    tabs.append("⚔️ Chiến Đấu")
+    tabs.append("⚔️ Chiến đấu")
 
 # Tạo các đối tượng tab
 tab_objects = st.tabs(tabs)
@@ -37,12 +37,12 @@ tab5 = tab_objects[4] if len(tab_objects) > 4 else None
 # ===== TAB 1: Hướng dẫn =====
 with tab1:
     st.markdown("""
-    ## 📖 Hướng Dẫn
+    ## 📖 Hướng dẫn
     - Tạo nhân vật ở tab 2
     - Chọn nhân vật ở tab 3 để mở tab Chiến đấu
     """)
 
-# ===== TAB 2: Quản lý nhân vật =====
+# ===== TAB 2: Tạo nhân vật =====
 with tab2:
     st.subheader("🧬 Tạo nhân vật mới")
 
