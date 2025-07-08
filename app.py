@@ -289,12 +289,23 @@ if tab5:
 with st.sidebar.expander("🔐 Quản Trị Hệ Thống", expanded=False):
     st.markdown("### 🔐 Xác Thực Admin")
 
-    # Biến xác thực admin dùng session_state
+    # Biến session nhớ trạng thái
     if "admin_authenticated" not in st.session_state:
         st.session_state.admin_authenticated = False
+    if "show_password" not in st.session_state:
+        st.session_state.show_password = False
+
+    # Checkbox bật/tắt hiện mật khẩu
+    show_pass = st.checkbox("👁️ Hiện mật khẩu", value=st.session_state.show_password)
+    st.session_state.show_password = show_pass
+
+    # Nhập mật khẩu
+    password = st.text_input(
+        "Nhập mật khẩu",
+        type="default" if show_pass else "password"
+    )
 
     if not st.session_state.admin_authenticated:
-        password = st.text_input("Nhập mật khẩu", type="password")
         if st.button("🔓 Xác thực"):
             if password == "duyanh":
                 st.session_state.admin_authenticated = True
@@ -303,7 +314,7 @@ with st.sidebar.expander("🔐 Quản Trị Hệ Thống", expanded=False):
                 st.error("❌ Sai mật khẩu!")
         st.stop()
 
-    # Nếu đã xác thực admin, hiển thị các tuỳ chọn
+    # ======= SAU XÁC THỰC ADMIN =======
     st.success("✅ Đang ở chế độ quản trị!")
 
     # --- Xoá toàn bộ database ---
@@ -353,11 +364,10 @@ with st.sidebar.expander("🔐 Quản Trị Hệ Thống", expanded=False):
                 if name_edit != "--- Chọn nhân vật ---":
                     char_info = df_filtered[df_filtered["name"] == name_edit].iloc[0]
 
-                    # Sửa tên
+                    # ==== SỬA NHÂN VẬT ====
                     st.markdown("##### ✍️ Chỉnh sửa thông tin")
                     new_name = st.text_input("🆕 Đổi tên nhân vật", value=char_info["name"])
 
-                    # Sửa chỉ số
                     attrs = ["strength", "stamina", "vitality", "dexterity", "agility"]
                     new_values = {}
                     for attr in attrs:
