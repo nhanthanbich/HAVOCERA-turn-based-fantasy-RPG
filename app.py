@@ -304,18 +304,7 @@ if tab5:
         # st.write("🧪 DEF:", vars(dfd))
 
         st.markdown(f"## 🔥 Vòng {round_idx} – {atk.name} hành động!")
-
-        # ===== THÔNG TIN NHÂN VẬT =====
-        try:
-            col1, col2 = st.columns(2)
-            with col1:
-                show_info(atk)
-            with col2:
-                show_info(dfd)
-        except Exception as e:
-            st.error(f"🚫 Không thể tạo layout nhân vật: {e}")
-            st.stop()
-
+        
         # ===== HÀNH ĐỘNG =====
         st.divider()
         st.subheader("🎬 Hành động đang diễn ra...")
