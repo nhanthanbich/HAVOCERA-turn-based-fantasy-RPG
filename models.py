@@ -246,7 +246,6 @@ class Witch(Character):
         )
 
     def choose_skill(self, enemy, auto=False):
-        self.start_turn()
         self.show_combat_info("chọn kỹ năng")
     
         # ⚠️ Nếu không có stamina tối đa – vô dụng
@@ -498,9 +497,8 @@ class Vampire(Character):
         )
 
     def choose_skill(self, enemy, auto=False):
-        self.start_turn()  # ✅ Bổ sung để reset trạng thái đầu lượt
         self.show_combat_info("chọn kỹ năng")
-    
+        
         # ⚠️ Nếu không có stamina tối đa – vô dụng
         if self.max_stamina == 0:
             msg = f"🤖 {self.name} không còn phép – **AI đánh thường.**" if auto else f"{self.name} không còn phép thuật – chỉ có thể đánh thường!"
@@ -519,7 +517,7 @@ class Vampire(Character):
         )
     
         skill_map = {
-            "👊 Đánh thường": lambda: self.attack(enemy)
+            "👊 Đánh thường": lambda: self.attack(enemy),
         }
     
         if self.current_stamina >= 2:
@@ -530,7 +528,10 @@ class Vampire(Character):
             skill_map["♻️ Tái Sinh (21 ⚡)"] = lambda: self.tai_sinh()
         skill_map["⚑ Đầu hàng"] = lambda: self.surrender()
     
+        # Lựa chọn kỹ năng
         choice = st.radio("🩸 **Chọn hành động**", list(skill_map.keys()))
+        
+        # Thi triển kỹ năng
         if st.button("🕹️ Thi triển kỹ năng"):
             skill_map.get(choice, lambda: st.warning("❌ Kỹ năng không tồn tại!"))()
     
@@ -597,7 +598,7 @@ class Vampire(Character):
     def surrender(self):
         self.hp = 0
         st.error(f"🏳️ **{self.name} đã đầu hàng!**")
-
+        
 class Werewolf(Character):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -785,9 +786,9 @@ class Werewolf(Character):
         )
     
     def choose_skill(self, enemy, auto=False):
-        self.start_turn()
         self.show_combat_info("chọn kỹ năng")
     
+        # Nếu là chế độ AI
         if auto:
             st.markdown(f"🤖 **{self.name}** (AI Ma Sói) đang suy tính chiến thuật...")
     
@@ -825,8 +826,8 @@ class Werewolf(Character):
                     if self.current_stamina >= 10:
                         st.markdown("🐺 Gặp địch yếu – biến hình tấn công.")
                         turn_over = self.skill_3()
-                        if turn_over is False:
-                            self.choose_skill(enemy, auto=True)
+                        if not turn_over:
+                            self.choose_skill(enemy, auto=True)  # chỉ gọi lại nếu cần
                         return
                     else:
                         st.markdown("💨 Thiếu stamina – vận công hồi phục.")
@@ -891,7 +892,7 @@ class Werewolf(Character):
                 else:
                     st.markdown("🐺 Đủ năng lượng – hóa sói phản công.")
                     turn_over = self.skill_3()
-                    if turn_over is False:
+                    if not turn_over:
                         self.choose_skill(enemy, auto=True)
                     return
     
@@ -902,7 +903,7 @@ class Werewolf(Character):
             else:
                 st.markdown("🐺 Đủ lực – hóa sói.")
                 turn_over = self.skill_3()
-                if turn_over is False:
+                if not turn_over:
                     self.choose_skill(enemy, auto=True)
     
             return
