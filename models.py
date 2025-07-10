@@ -862,7 +862,7 @@ class Werewolf(Character):
     
                 if crit_ready and can_fury_strike and enemy_is_dying:
                     st.markdown("🔥 Kết liễu bằng tất sát.")
-                    dmg = self.fury_strike(enemy)
+                    dmg = self.skill_2(enemy)
                     if dmg:
                         enemy.take_damage(dmg, self)
                     return
